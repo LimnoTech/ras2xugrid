@@ -1,0 +1,164 @@
+name: CI
+
+# Which runners a commit gets depends on why the run started, because macOS
+# minutes bill at about 10x Linux and Windows at about 2x, and a full matrix
+# cost about ten times an Ubuntu-only run (2026-10-09 job timings):
+#
+# - `push`, any branch: Ubuntu only, for the latest commit pushed to the
+#   branch (a newer push cancels a run still in progress).
+# - `pull_request` into `main`: Ubuntu, macOS and Windows, for the head of a
+#   PR before it merges. Ubuntu therefore runs twice per commit there,
+#   once per event, which is accepted. PRs into other branches
+#   get no `pull_request` run: the push run already tested the same commit.
+# - `workflow_dispatch`: all three, on any branch, from the Actions tab. Run it
+#   on a branch that changes dependencies, the lock or file I/O, where a
+#   Windows-only failure would otherwise wait for the
+#   PR into `main`. It has its own concurrency group, so a push to the branch does
+#   not cancel it.
+#
+# Not run on macOS or Windows: a PR retargeted to `main`, until its next push;
+# and the merge commit on `main` when `main` moved after the PR's last run. If
+# either matters, run the workflow manually: on the PR's branch for the first,
+# on `main` after the merge for the second.
+#
+# The matrix expression in the `test` job implements the split.
+#
+# The `notebook` job executes examples/sumwere_creek.py's notebook in the `examples`
+# environment on a PR into `main` and on a manual run, never on a push. It downloads the pinned
+# Sumwere Creek plan (HECRAS_TEST_DATA unset) and caches it on its SHA-256.
+#
+# This repository is public, so a fork's PR runs this file. It holds no secrets and the token is
+# read-only (`permissions` below). Never use the `pull_request_target` trigger here: it runs
+# with write access and secrets against a fork's code.
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Ubuntu alone on push; all three for a PR into `main` or a manual run.
+        os: ${{ fromJSON(github.event_name == 'push' && '["ubuntu-latest"]' || '["ubuntu-latest", "macos-latest", "windows-latest"]') }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # hatch-vcs derives the version from git history, so a shallow clone
+          # would yield a bogus version and break the import test.
+          fetch-depth: 0
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          manifest-path: pyproject.toml
+          # The lean environment: core + viz + dev, no Jupyter stack. Solving the
+          # geospatial stack on all three runners (on a PR into `main` or a
+          # manual run) is the most valuable thing this job does.
+          #
+          # The input is `environments`, plural. `environment` is silently
+          # ignored -- setup-pixi warns but does not fail -- and the fallback
+          # installs the *default* environment, so this job spent months
+          # solving the full Jupyter stack it exists to avoid.
+          environments: ci
+          # Fail if pixi.lock is out of date with pyproject.toml, rather than
+          # silently re-solving. Catches a manifest edited without re-locking.
+          locked: true
+          cache: true
+
+      # Steps are kept separate so a failure names the tool that failed.
+      - name: Tests
+        # PYTHONFAULTHANDLER prints a native crash and the Python stack it happened in, even
+        # one during interpreter shutdown, after pytest has already reported every test passed
+        # (how a Windows exit crash was first seen in a sibling package). `exit $LASTEXITCODE` makes
+        # a failed test command fail the step in PowerShell; pixi still reports the code as 1.
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: |
+          pixi run -e ci test
+          exit $LASTEXITCODE
+
+      - name: Lint
+        run: pixi run -e ci lint
+
+      - name: Format
+        run: pixi run -e ci ruff format --check src tests
+
+  # Type checking runs in `default`, on one runner only: pyrefly is static, so a
+  # three-OS matrix buys nothing a single run does not already prove.
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          manifest-path: pyproject.toml
+          environments: default
+          locked: true
+          cache: true
+
+      - name: Type check
+        run: pixi run typecheck
+
+  # Executes the example notebook headlessly in the `examples` environment. Not on a push: the
+  # download is 19.9 MB and the solve is the largest of the three environments.
+  notebook:
+    name: notebook
+    runs-on: ubuntu-latest
+    if: github.event_name != 'push'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Keyed on the SHA-256 the notebook pins (PLAN_SHA256), so a new pin is a new entry.
+      - name: Cache the Sumwere Creek plan
+        uses: actions/cache@v4
+        with:
+          path: examples/data_temp
+          # Keep in step with PLAN_SHA256 in examples/sumwere_creek.py
+          # (tests/test_ci_notebook_cache.py checks it).
+          key: sumwere-creek-9f01138412122c40b62bb28772e7da0a868f84bc6e2f86f2327bc164e9a7162b
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          manifest-path: pyproject.toml
+          environments: examples
+          locked: true
+          cache: true
+
+      # HECRAS_TEST_DATA is unset, so the notebook downloads the pinned file (or reads the
+      # cache). The executed copy goes to the runner's temp folder, not the checkout.
+      - name: Execute the example notebook
+        run: pixi run -e examples jupyter nbconvert --to notebook --execute --output-dir "$RUNNER_TEMP" examples/sumwere_creek.ipynb

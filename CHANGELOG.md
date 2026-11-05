@@ -1,0 +1,20 @@
+# Changelog
+
+## 0.1.0 (2026-11-05)
+
+The first release.
+
+- Read a HEC-RAS 2D plan file with `h5py` (no HEC-RAS, Windows or `pythonnet` needed):
+  `list_flow_areas`, `open_flow_area` (an `xugrid.UgridDataset` with HEC-RAS's names, attributes
+  and units kept verbatim, and a `time` coordinate beside HEC-RAS's `Time` in days as
+  `time_days`) and `pipe_nodes`.
+- Find the faces a line crosses, signed by the line's direction: `cross_section_faces`.
+- Find the faces on the boundary of a set of cells, or take them from a table:
+  `boundary_faces` and `faces_from_table`.
+- Sum signed face results over cross sections: `cross_section_series`.
+- Draw a cell-valued (UGRID face) variable cell by cell with a time slider: `ras2xugrid.viz.mesh_map`
+  (the optional `viz` extra).
+- Write a small synthetic plan file for tests: `ras2xugrid.testing.write_synthetic_plan`.
+- An example notebook on ClearWater-riverine's Sumwere Creek plan
+  (`examples/sumwere_creek.py`), and tests against real plan files (`pixi run test-local`, with
+  `HECRAS_TEST_DATA` set).
