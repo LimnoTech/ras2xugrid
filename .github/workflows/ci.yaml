@@ -10,11 +10,16 @@ name: CI
 #   PR before it merges. Ubuntu therefore runs twice per commit there,
 #   once per event, which is accepted. PRs into other branches
 #   get no `pull_request` run: the push run already tested the same commit.
-# - `workflow_dispatch`: all three, on any branch, from the Actions tab. Run it
-#   on a branch that changes dependencies, the lock or file I/O, where a
-#   Windows-only failure would otherwise wait for the
-#   PR into `main`. It has its own concurrency group, so a push to the branch does
-#   not cancel it.
+#   This repository is public, so its minutes are free: PRs keep macOS, which
+#   water-data-engine's PRs drop (user, 2026-11-05).
+# - `workflow_dispatch`: from the Actions tab, on any branch, with an `os` choice:
+#   `windows`, `macos` or `both` (the default). The `test` job runs no Ubuntu and
+#   there is no typecheck: the push run already did both for the same commit
+#   (unless that push changed only files `paths-ignore` skips, which need no
+#   tests). Run it on a branch that changes dependencies, the lock or file I/O,
+#   where a Windows-only failure would otherwise wait for the PR into `main`, and
+#   run `both` on `main` after a merge that changes `pixi.lock`, to seed the caches.
+#   It has its own concurrency group, so a push to the branch does not cancel it.
 #
 # Not run on macOS or Windows: a PR retargeted to `main`, until its next push;
 # and the merge commit on `main` when `main` moved after the PR's last run. If
@@ -23,9 +28,20 @@ name: CI
 #
 # The matrix expression in the `test` job implements the split.
 #
+# Only `main` writes the pixi cache (`cache-write` in each setup-pixi step).
+# GitHub lets a ref read caches only from itself and from the default branch, so
+# a cache written on a branch or on a PR's `refs/pull/N/merge` serves no other
+# ref, and in water-data-engine those caches filled the 10 GB limit, at which
+# GitHub evicts the oldest (2026-11-05). `main` writes its Windows and macOS
+# caches only through a manual run: a push to `main` runs Ubuntu only. After a
+# merge that changes `pixi.lock`, run the workflow manually on `main` with
+# `both`, so that PRs and manual runs get cache hits.
+#
 # The `notebook` job executes examples/sumwere_creek.py's notebook in the `examples`
 # environment on a PR into `main` and on a manual run, never on a push. It downloads the pinned
-# Sumwere Creek plan (HECRAS_TEST_DATA unset) and caches it on its SHA-256.
+# Sumwere Creek plan (HECRAS_TEST_DATA unset) and caches it on its SHA-256. It is the one
+# Ubuntu job a manual run keeps: a manual run on `main` is what writes `main`'s `examples`
+# environment cache, and its plan cache after the pin changes.
 #
 # This repository is public, so a fork's PR runs this file. It holds no secrets and the token is
 # read-only (`permissions` below). Never use the `pull_request_target` trigger here: it runs
@@ -42,12 +58,23 @@ on:
       - "**.md"
       - ".gitignore"
   workflow_dispatch:
+    inputs:
+      os:
+        description: "Operating system to test (Ubuntu runs on every push)"
+        type: choice
+        options:
+          - windows
+          - macos
+          - both
+        default: both
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  # `inputs.os` evaluates to empty except on a manual run, so a `windows` and a `macos` run
+  # started on the same branch (by two developers) do not cancel each other.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.os }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -58,8 +85,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Ubuntu alone on push; all three for a PR into `main` or a manual run.
-        os: ${{ fromJSON(github.event_name == 'push' && '["ubuntu-latest"]' || '["ubuntu-latest", "macos-latest", "windows-latest"]') }}
+        # Ubuntu alone on push; all three for a PR into `main`; for a manual run
+        # (`workflow_dispatch`) the `os` input picks Windows, macOS or both.
+        os: >-
+          ${{ fromJSON(
+          github.event_name == 'push' && '["ubuntu-latest"]'
+          || github.event_name == 'pull_request' && '["ubuntu-latest", "macos-latest", "windows-latest"]'
+          || inputs.os == 'windows' && '["windows-latest"]'
+          || inputs.os == 'macos' && '["macos-latest"]'
+          || '["macos-latest", "windows-latest"]') }}
 
     steps:
       - name: Checkout repo
@@ -74,8 +108,8 @@ jobs:
         with:
           manifest-path: pyproject.toml
           # The lean environment: core + viz + dev, no Jupyter stack. Solving the
-          # geospatial stack on all three runners (on a PR into `main` or a
-          # manual run) is the most valuable thing this job does.
+          # geospatial stack on every runner a PR into `main` or a manual run
+          # uses is the most valuable thing this job does.
           #
           # The input is `environments`, plural. `environment` is silently
           # ignored -- setup-pixi warns but does not fail -- and the fallback
@@ -86,6 +120,8 @@ jobs:
           # silently re-solving. Catches a manifest edited without re-locking.
           locked: true
           cache: true
+          # Written on `main` only (see the header comment).
+          cache-write: ${{ github.ref_name == 'main' }}
 
       # Steps are kept separate so a failure names the tool that failed.
       - name: Tests
@@ -109,6 +145,8 @@ jobs:
   # three-OS matrix buys nothing a single run does not already prove.
   typecheck:
     name: typecheck
+    # A manual run tests the other operating systems; the push run already typechecked.
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -124,6 +162,8 @@ jobs:
           environments: default
           locked: true
           cache: true
+          # Written on `main` only (see the header comment).
+          cache-write: ${{ github.ref_name == 'main' }}
 
       - name: Type check
         run: pixi run typecheck
@@ -157,6 +197,8 @@ jobs:
           environments: examples
           locked: true
           cache: true
+          # Written on `main` only (see the header comment).
+          cache-write: ${{ github.ref_name == 'main' }}
 
       # HECRAS_TEST_DATA is unset, so the notebook downloads the pinned file (or reads the
       # cache). The executed copy goes to the runner's temp folder, not the checkout.
