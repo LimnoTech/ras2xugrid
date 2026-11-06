@@ -1,8 +1,10 @@
 name: CI
 
-# Which runners a commit gets depends on why the run started, because macOS
-# minutes bill at about 10x Linux and Windows at about 2x, and a full matrix
-# cost about ten times an Ubuntu-only run (2026-10-09 job timings):
+# Which runners a commit gets depends on why the run started. The split comes
+# from water-data-engine, a private repository, where macOS minutes bill at about
+# 10x Linux and Windows at about 2x, and a full matrix cost about ten times an
+# Ubuntu-only run (2026-10-09 job timings). This repository is public, so its
+# minutes are free; it keeps the split for speed on pushes:
 #
 # - `push`, any branch: Ubuntu only, for the latest commit pushed to the
 #   branch (a newer push cancels a run still in progress).
