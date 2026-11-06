@@ -44,7 +44,19 @@ family's internal workflow guide; everything an outside contributor needs is her
 ## Verification
 
 `pixi run test`, `pixi run lint`, `pixi run format`, `pixi run typecheck`, and
-`pixi run -e ci test` for the environment CI tests in (core, viz and dev, without Jupyter).
+`pixi run -e ci test` for the environment CI tests in (core, viz and dev, without Jupyter). Run
+`pixi run -e ci test` before handing back or merging: `pixi run test` uses the full environment and
+can pass a test that imports something only Jupyter provides.
+
+[CI](.github/workflows/ci.yaml): a push to any branch runs on Ubuntu only; a PR into `main` runs
+Ubuntu, macOS and Windows (this repository is public, so the minutes are free); a manual run
+(`workflow_dispatch`, from the Actions tab) has an `os` dropdown, `windows`, `macos` or `both`
+(default), and runs the notebook job but no Ubuntu tests and no typecheck. Only `main` writes the
+pixi cache (a branch's or PR's cache serves no other ref and crowds older caches out), so after a
+merge that changes `pixi.lock`, run the workflow manually on `main` with `both` once: that run
+writes the Windows, macOS and `examples` caches that PRs and manual runs then restore. On a branch
+that changes dependencies, the lock or file I/O, run it manually once pushed, rather than wait for
+the PR to find a Windows-only failure.
 `pixi run test-local` runs the real-file tests when `HECRAS_TEST_DATA` is set. After a dependency
 change, run `grep '^\s*- pypi:' pixi.lock | sort -u`: only `./` (the editable self-install) should
 appear. Anything else belongs in a feature under its conda name. The `examples` environment shares
