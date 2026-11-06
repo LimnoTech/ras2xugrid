@@ -162,8 +162,7 @@ def test_version_constraints_are_declared_on_both_sides(pyproject, feature, extr
     }
     assert not lopsided, (
         f"the '{feature}' conda list and its [project] list disagree on whether a package is "
-        f"version-"
-        f"constrained (PyPI, conda): {lopsided}. Constrain both halves or neither."
+        f"version-constrained (PyPI, conda): {lopsided}. Constrain both halves or neither."
     )
 
 
@@ -175,7 +174,7 @@ def test_allowlists_contain_no_dead_entries(pyproject):
 
     dead_conda_only = CONDA_ONLY - all_conda
     assert not dead_conda_only, (
-        f"CONDA_ONLY lists packages no conda list (a pixi feature or the "
+        "CONDA_ONLY lists packages no conda list (a pixi feature or the "
         f"package's run-dependencies) depends on: {sorted(dead_conda_only)}"
     )
 
@@ -189,7 +188,7 @@ def test_allowlists_contain_no_dead_entries(pyproject):
 
     dead_mappings = set(CONDA_TO_PYPI) - all_conda
     assert not dead_mappings, (
-        f"CONDA_TO_PYPI maps packages no conda list (a pixi feature or the "
+        "CONDA_TO_PYPI maps packages no conda list (a pixi feature or the "
         f"package's run-dependencies) depends on: {sorted(dead_mappings)}"
     )
 
