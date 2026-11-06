@@ -144,9 +144,15 @@ def test_ci_environment_has_no_jupyter_stack():
 
 
 def satisfies(version: str, specifier: str) -> bool:
-    """Whether a dotted version meets a comma-joined ``>=``/``<``/``==`` specifier."""
+    """Whether a dotted version meets a comma-joined ``>=``/``<``/``==`` specifier.
+
+    Raises ValueError naming the text for a version that is not dotted numbers (``latest``) or
+    an operator this does not read (``~=``, ``!=``).
+    """
 
     def parts(text: str) -> tuple[int, ...]:
+        if not re.fullmatch(r"v?\d+(\.\d+)*", text):
+            raise ValueError(f"not a dotted numeric version: {text!r}")
         return tuple(int(p) for p in text.lstrip("v").split("."))
 
     compare = {
@@ -157,7 +163,10 @@ def satisfies(version: str, specifier: str) -> bool:
         "==": lambda a, b: a[: len(b)] == b,
     }
     for clause in spec(specifier).split(","):
-        op, bound = re.fullmatch(r"(>=|<=|==|>|<)(.+)", clause).groups()
+        match = re.fullmatch(r"(>=|<=|==|>|<)([^<>=!~]+)", clause)
+        if match is None:
+            raise ValueError(f"unsupported specifier {clause!r} in {specifier!r}")
+        op, bound = match.groups()
         if not compare[op](parts(version), parts(bound)):
             return False
     return True
@@ -169,27 +178,78 @@ def test_satisfies_reads_requires_pixi_ranges():
     assert not satisfies("0.75.2", ">=0.76")
 
 
+def test_satisfies_names_a_version_it_cannot_read():
+    with pytest.raises(ValueError, match="'latest'"):
+        satisfies("latest", ">=0.76")
+
+
+@pytest.mark.parametrize("specifier", ["~=0.76", "!=0.77", ">=0.76,!=0.76.1"])
+def test_satisfies_refuses_an_unsupported_specifier(specifier):
+    with pytest.raises(ValueError, match="unsupported specifier"):
+        satisfies("0.76.0", specifier)
+
+
+def setup_pixi_steps(workflow: dict) -> list[dict]:
+    """The prefix-dev/setup-pixi steps of a parsed workflow."""
+    return [
+        step
+        for job in workflow["jobs"].values()
+        for step in job.get("steps") or []
+        if str(step.get("uses", "")).startswith("prefix-dev/setup-pixi")
+    ]
+
+
+def pixi_pin_problems(workflow: dict, required: str | None) -> list[str]:
+    """What is wrong with the workflow's pixi pins, one message per step; empty if nothing."""
+    problems = []
+    for step in setup_pixi_steps(workflow):
+        name = step.get("name", step["uses"])
+        version = (step.get("with") or {}).get("pixi-version")
+        if version is None:
+            problems.append(f"{name!r} sets no pixi-version")
+        elif required:
+            try:
+                inside = satisfies(str(version), required)
+            except ValueError as error:
+                problems.append(f"{name!r}: pixi-version {version!r}: {error}")
+            else:
+                if not inside:
+                    problems.append(f"{name!r}: pixi-version {version!r} is outside {required!r}")
+    return problems
+
+
+def workflow_with(step_with: object) -> dict:
+    return {
+        "jobs": {
+            "j": {
+                "steps": [
+                    {"name": "Setup pixi", "uses": "prefix-dev/setup-pixi@v0", "with": step_with}
+                ]
+            }
+        }
+    }
+
+
+def test_an_empty_with_is_reported_not_raised():
+    assert pixi_pin_problems(workflow_with(None), ">=0.76,<0.77") == [
+        "'Setup pixi' sets no pixi-version"
+    ]
+
+
+def test_a_non_numeric_pixi_version_is_reported_with_its_step():
+    (problem,) = pixi_pin_problems(workflow_with({"pixi-version": "latest"}), ">=0.76,<0.77")
+    assert problem.startswith("'Setup pixi': pixi-version 'latest'")
+
+
+def test_an_unsupported_requires_pixi_is_reported():
+    (problem,) = pixi_pin_problems(workflow_with({"pixi-version": "v0.76.0"}), "~=0.76")
+    assert "unsupported specifier" in problem
+
+
 def test_ci_pins_the_pixi_version(pyproject):
     """pixi-build is a preview, so CI runs the pixi the lock was made with."""
     workflow = yaml.safe_load((REPO / ".github/workflows/ci.yaml").read_text(encoding="utf-8"))
-    steps = [
-        step
-        for job in workflow["jobs"].values()
-        for step in job.get("steps", [])
-        if str(step.get("uses", "")).startswith("prefix-dev/setup-pixi")
-    ]
-    assert steps, "no setup-pixi step found in ci.yaml"
-    unpinned = [
-        step.get("name", step["uses"])
-        for step in steps
-        if "pixi-version" not in step.get("with", {})
-    ]
-    assert not unpinned, f"setup-pixi steps without pixi-version: {unpinned}"
+    assert setup_pixi_steps(workflow), "no setup-pixi step found in ci.yaml"
     required = pyproject["tool"]["pixi"]["workspace"].get("requires-pixi")
-    if required:
-        outside = {
-            step.get("name", step["uses"]): step["with"]["pixi-version"]
-            for step in steps
-            if not satisfies(str(step["with"]["pixi-version"]), required)
-        }
-        assert not outside, f"pixi-version outside requires-pixi {required!r}: {outside}"
+    problems = pixi_pin_problems(workflow, required)
+    assert not problems, "; ".join(problems)

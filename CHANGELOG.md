@@ -4,10 +4,13 @@
 
 - ras2xugrid is a pixi-build source package (`[tool.pixi.package]`), and this repository installs
   itself from it. A consumer that is a pixi workspace can declare
-  `ras2xugrid = { path = "../ras2xugrid" }` under a conda `[dependencies]` table (with
-  `preview = ["pixi-build"]`) and inherit its run-dependencies and the viz floors. The package's
-  static version is the last release, bumped at each release; `__version__` still comes from
-  hatch-vcs. pixi is pinned to 0.76 (`requires-pixi`, and `pixi-version` in CI).
+  `ras2xugrid = { path = "../ras2xugrid" }` under `[tool.pixi.dependencies]` (a `[dependencies]`
+  table in a `pixi.toml`), with `preview = ["pixi-build"]` in `[tool.pixi.workspace]`, and inherit
+  its run-dependencies and the viz floors. The package's static version is the last release,
+  bumped at each release; `__version__` still comes from hatch-vcs. pixi is pinned to 0.76
+  (`requires-pixi`, and `pixi-version` in CI). Upgrading an existing checkout in place can leave
+  the default environment without the editable install (`ModuleNotFoundError: ras2xugrid`); run
+  `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run `pixi install --locked`.
 
 ## 0.1.0 (2026-11-05)
 

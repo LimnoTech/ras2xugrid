@@ -20,8 +20,8 @@ family's internal workflow guide; everything an outside contributor needs is her
   `[project.dependencies]` (or its extra); the conda name goes in the matching
   `[tool.pixi.feature.*]` (the core list is `[tool.pixi.package.run-dependencies]`, see
   [Source package](#source-package)). Add one and you must add both, or
-  `tests/test_dependency_parity.py` fails. `pandas` implies `pyarrow`. Core has no plotting library. **Never depend on
-  water-data-engine or `stream-design`**, in the manifest, the lock or CI.
+  `tests/test_dependency_parity.py` fails. `pandas` implies `pyarrow`. Core has no plotting
+  library. **Never depend on a private LimnoTech package**, in the manifest, the lock or CI.
 - **Preserve HEC-RAS terminology verbatim.** Variable names, attribute names, `Units` and
   `Location` strings are carried as HEC-RAS writes them. Anything derived gets a new name and
   attributes saying how it was derived. In prose, paraphrase and link to the primary HEC-RAS
@@ -30,7 +30,7 @@ family's internal workflow guide; everything an outside contributor needs is her
   convert a HEC-RAS variable silently; need HEC-RAS installed, or a Windows-only library such as
   `pythonnet`, to read a file; grow a post-processing API that xugrid already has (point
   sampling, zonal statistics, rasters, polygonizing) or a water balance (that belongs in analysis
-  code on top of the package); depend on water-data-engine or `stream-design`.
+  code on top of the package); depend on a private LimnoTech package.
 - **Plan files are never committed** (`*.hdf` is git-ignored). Tests that read a real file read
   the folder in `HECRAS_TEST_DATA` and are marked `local_data`, skipped unless it is set.
 - **Windows matters from the first commit**: the co-developer, Jason Rutyna, works on Windows.
@@ -72,16 +72,21 @@ the tool configuration; there is no `pixi.toml` or `environment.yml`.
 ras2xugrid is a [pixi-build](https://pixi.sh/latest/build/getting_started/) source package
 (`[tool.pixi.package]` in `pyproject.toml`), and this repository consumes itself the same way, from
 `[tool.pixi.dependencies]`. A consumer that is a pixi workspace declares it under a conda
-`[dependencies]` table, with `preview = ["pixi-build"]` in its `[workspace]`:
+dependencies table, with the preview feature enabled:
 
 ```toml
-[dependencies]
+[tool.pixi.workspace]
+preview = ["pixi-build"]
+
+[tool.pixi.dependencies]
 ras2xugrid = { path = "../ras2xugrid" }
 ```
 
-It then inherits the package's `run-dependencies` and `run-constraints` (the viz floors, which
-apply only when the consumer installs those packages) in its own solve, instead of repeating them.
-A source package carries no extras, so a consumer that draws maps names the viz packages itself.
+(In a `pixi.toml`, the tables are `[workspace]` and `[dependencies]`.) The consumer then inherits
+the package's `run-dependencies` and `run-constraints` in its own solve, instead of repeating them.
+A run-constraint applies to that package wherever it appears in the consumer's solve, one pulled in
+only by another dependency included, and installs nothing by itself. A conda source dependency
+carries no extras, so a consumer that draws maps names the viz packages itself.
 
 - `feature.core` holds only the environment's python; `tests/test_package_section.py` keeps the
   package tables in step with `[project]` and the viz feature.
@@ -90,6 +95,9 @@ A source package carries no extras, so a consumer that draws maps names the viz 
   hatch-vcs; the static version reaches only the conda record, where a consumer may floor it.
 - pixi is pinned to `>=0.76,<0.77` (`requires-pixi`), and each `setup-pixi` step in CI sets
   `pixi-version: v0.76.0`, because pixi-build is a preview. Move both together.
+- Upgrading an existing checkout in place can leave the default environment without the editable
+  install (`ModuleNotFoundError: ras2xugrid`); run `pixi reinstall ras2xugrid`, or delete
+  `.pixi/envs/default` and run `pixi install --locked`.
 
 ## Gotchas
 

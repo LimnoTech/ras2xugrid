@@ -111,7 +111,8 @@ def test_every_pypi_dependency_has_a_conda_counterpart(pyproject, feature, extra
     available = {normalize(name) for name in conda_names(pyproject, feature)}
     missing = declared - available - PYPI_ONLY
     assert not missing, (
-        f"declared in [project] but absent from the '{feature}' pixi feature: {sorted(missing)}"
+        f"declared in [project] but absent from the '{feature}' "
+        f"conda list (a pixi feature or the package's run-dependencies): {sorted(missing)}"
     )
 
 
@@ -125,7 +126,8 @@ def test_every_conda_dependency_is_declared_or_allowlisted(pyproject, feature, e
         if name not in CONDA_ONLY and normalize(name) not in declared
     }
     assert not undeclared, (
-        f"in the '{feature}' pixi feature but not in [project]: {sorted(undeclared)}. "
+        f"in the '{feature}' conda list (a pixi feature or the package's run-dependencies) but not "
+        f"in [project]: {sorted(undeclared)}. "
         "Either declare them, or add them to CONDA_ONLY with a comment saying why."
     )
 
@@ -159,7 +161,8 @@ def test_version_constraints_are_declared_on_both_sides(pyproject, feature, extr
         if bool(pypi_specifiers[name]) != bool(conda_specifiers[name])
     }
     assert not lopsided, (
-        f"'{feature}' feature and its extra disagree on whether a package is version-"
+        f"the '{feature}' conda list and its [project] list disagree on whether a package is "
+        f"version-"
         f"constrained (PyPI, conda): {lopsided}. Constrain both halves or neither."
     )
 
@@ -172,7 +175,8 @@ def test_allowlists_contain_no_dead_entries(pyproject):
 
     dead_conda_only = CONDA_ONLY - all_conda
     assert not dead_conda_only, (
-        f"CONDA_ONLY lists packages no feature depends on: {sorted(dead_conda_only)}"
+        f"CONDA_ONLY lists packages no conda list (a pixi feature or the "
+        f"package's run-dependencies) depends on: {sorted(dead_conda_only)}"
     )
 
     all_pypi = set(pypi_names(pyproject, None))
@@ -185,7 +189,8 @@ def test_allowlists_contain_no_dead_entries(pyproject):
 
     dead_mappings = set(CONDA_TO_PYPI) - all_conda
     assert not dead_mappings, (
-        f"CONDA_TO_PYPI maps packages no feature depends on: {sorted(dead_mappings)}"
+        f"CONDA_TO_PYPI maps packages no conda list (a pixi feature or the "
+        f"package's run-dependencies) depends on: {sorted(dead_mappings)}"
     )
 
 
@@ -201,7 +206,7 @@ def test_feature_to_extra_map_is_complete(pyproject):
     uncovered_features = all_features - covered_or_excluded
     assert not uncovered_features, (
         f"pixi features missing from FEATURE_TO_EXTRA (and not the deliberately-excluded "
-        f"'dev' and 'examples'): {sorted(uncovered_features)}"
+        f"'dev', 'examples' and 'core'): {sorted(uncovered_features)}"
     )
 
     all_extras = set(pyproject["project"]["optional-dependencies"])
