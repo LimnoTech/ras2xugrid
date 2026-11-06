@@ -42,7 +42,7 @@ classifiers = [
 ]
 
 # The PyPI-name half of the dual declaration; tests/test_dependency_parity.py keeps it in
-# step with [tool.pixi.feature.core.dependencies]. No plotting library in this list, and no
+# step with [tool.pixi.package.run-dependencies]. No plotting library in this list, and no
 # dependency on any other LimnoTech package.
 dependencies = [
   "h5py",
@@ -94,14 +94,39 @@ packages = ["src/ras2xugrid"]
 [tool.pixi.workspace]
 channels = ["conda-forge", "nodefaults"]
 platforms = ["linux-64", "osx-arm64", "win-64"]
+# pixi-build is a preview, so pixi is pinned to the version the package section was probed on;
+# CI's setup-pixi steps pin the same version (tests/test_package_section.py). Moving pixi is a
+# deliberate change.
+preview = ["pixi-build"]
+requires-pixi = ">=0.76,<0.77"
 
-# Self-install, in the implicit default feature so every environment gets it.
-[tool.pixi.pypi-dependencies]
-ras2xugrid = { path = ".", editable = true }
+# Self-install as a pixi-build source package, in the implicit default feature so every
+# environment gets it: this repository consumes itself as its consumers do.
+[tool.pixi.dependencies]
+ras2xugrid = { path = "." }
 
-# The conda-name half of the dual declaration.
-[tool.pixi.feature.core.dependencies]
+# ras2xugrid as a pixi-build source package: a consumer that names it under a conda
+# [dependencies] table gets the run-dependencies and run-constraints below in its own solve, so
+# its floors reach the consumer on a plain `pixi lock`. tests/test_package_section.py holds these
+# tables to [project] and to the viz feature.
+[tool.pixi.package]
+name = "ras2xugrid"
+# The last release, bumped beside CHANGELOG.md in each release-preparation PR. It is the conda
+# record's version, which a consumer can floor; __version__ still comes from hatch-vcs.
+version = "0.1.0"
+
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "*" }
+
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+hatch-vcs = "*"
 python = "3.12.*"
+
+# The conda-name half of the dual declaration: [project.dependencies] in conda names, plus the
+# conda-only packages. The environment's own python stays in feature.core.
+[tool.pixi.package.run-dependencies]
+python = ">=3.12,<3.14"       # requires-python
 h5py = "*"
 numpy = "*"
 pandas = "*"
@@ -111,6 +136,17 @@ shapely = "*"
 sqlite = ">=3.38"             # the GDAL/PROJ stack leaves it unbounded; the system library floor is not a Python import
 xarray = "*"
 xugrid = "*"
+
+# The viz floors: exactly the versioned entries of feature.viz. Constraints, not dependencies,
+# so a consumer that draws maps declares the package itself and gets the floor, and one that
+# does not installs nothing from viz.
+[tool.pixi.package.run-constraints]
+colorcet = ">=3.2.1,<4"
+holoviews = ">=1.23"
+
+# Only the environment's python: the core list is the run-dependencies above.
+[tool.pixi.feature.core.dependencies]
+python = "3.12.*"
 
 [tool.pixi.feature.viz.dependencies]
 bokeh = "*"

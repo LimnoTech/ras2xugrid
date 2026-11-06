@@ -18,8 +18,9 @@ family's internal workflow guide; everything an outside contributor needs is her
 - **Every review finding is fixed before the hand-back, Minor ones included.**
 - **Every runtime dependency is declared twice, on purpose.** The PyPI name goes in
   `[project.dependencies]` (or its extra); the conda name goes in the matching
-  `[tool.pixi.feature.*]`. Add one and you must add both, or `tests/test_dependency_parity.py`
-  fails. `pandas` implies `pyarrow`. Core has no plotting library. **Never depend on
+  `[tool.pixi.feature.*]` (the core list is `[tool.pixi.package.run-dependencies]`, see
+  [Source package](#source-package)). Add one and you must add both, or
+  `tests/test_dependency_parity.py` fails. `pandas` implies `pyarrow`. Core has no plotting library. **Never depend on
   water-data-engine or `stream-design`**, in the manifest, the lock or CI.
 - **Preserve HEC-RAS terminology verbatim.** Variable names, attribute names, `Units` and
   `Location` strings are carried as HEC-RAS writes them. Anything derived gets a new name and
@@ -58,12 +59,37 @@ writes the Windows, macOS and `examples` caches that PRs and manual runs then re
 that changes dependencies, the lock or file I/O, run it manually once pushed, rather than wait for
 the PR to find a Windows-only failure.
 `pixi run test-local` runs the real-file tests when `HECRAS_TEST_DATA` is set. After a dependency
-change, run `grep '^\s*- pypi:' pixi.lock | sort -u`: only `./` (the editable self-install) should
-appear. Anything else belongs in a feature under its conda name. The `examples` environment shares
+change, run `grep '^\s*- pypi:' pixi.lock | sort -u`: nothing should appear, because this
+repository installs itself as a source package from conda. Anything that does belongs in a
+feature under its conda name. The `examples` environment shares
 the `default` solve group on purpose, so ras2xugrid's own tests run against the versions the
 example uses. `pixi.lock` is generated; never edit it by hand. The layout is the shared packaging
 pattern: `pyproject.toml` is the single source of truth for the build, the environment (pixi) and
 the tool configuration; there is no `pixi.toml` or `environment.yml`.
+
+## Source package
+
+ras2xugrid is a [pixi-build](https://pixi.sh/latest/build/getting_started/) source package
+(`[tool.pixi.package]` in `pyproject.toml`), and this repository consumes itself the same way, from
+`[tool.pixi.dependencies]`. A consumer that is a pixi workspace declares it under a conda
+`[dependencies]` table, with `preview = ["pixi-build"]` in its `[workspace]`:
+
+```toml
+[dependencies]
+ras2xugrid = { path = "../ras2xugrid" }
+```
+
+It then inherits the package's `run-dependencies` and `run-constraints` (the viz floors, which
+apply only when the consumer installs those packages) in its own solve, instead of repeating them.
+A source package carries no extras, so a consumer that draws maps names the viz packages itself.
+
+- `feature.core` holds only the environment's python; `tests/test_package_section.py` keeps the
+  package tables in step with `[project]` and the viz feature.
+- The package's static `version` is the **last release**: bump it beside the `CHANGELOG.md` heading
+  in each release-preparation change (a test checks the two agree). `__version__` still comes from
+  hatch-vcs; the static version reaches only the conda record, where a consumer may floor it.
+- pixi is pinned to `>=0.76,<0.77` (`requires-pixi`), and each `setup-pixi` step in CI sets
+  `pixi-version: v0.76.0`, because pixi-build is a preview. Move both together.
 
 ## Gotchas
 
