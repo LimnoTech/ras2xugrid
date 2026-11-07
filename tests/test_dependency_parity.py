@@ -136,7 +136,7 @@ def test_every_conda_dependency_is_declared_or_allowlisted(pyproject, feature, e
 def test_version_constraints_are_declared_on_both_sides(pyproject, feature, extra):
     """A floor pinned in only one half makes the other half's promise wrong.
 
-    The two tests above compare *names* and stop there, so ``colorcet = ">=3.2.1,<4"`` in the
+    The two tests above compare *names* and stop there, so ``colorcet = ">=3.2.1"`` in the
     pixi feature beside a bare ``"colorcet"`` in the extra passes them both -- and the wheel
     then claims to work with a version the environment forbids. This does not compare specifier
     *syntax*, which legitimately differs between conda and PEP 508; it asserts only that a

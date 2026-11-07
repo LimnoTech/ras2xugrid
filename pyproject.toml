@@ -9,7 +9,7 @@ description = "Read HEC-RAS 2D plan files (HDF5) into xugrid, with the HEC-RAS n
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 authors = [
   { name = "Anthony Aufdenkampe", email = "aaufdenkampe@limno.com" },
   { name = "Jason Rutyna", email = "jrutyna@limno.com" },
@@ -62,7 +62,7 @@ jupyter = [
 ]
 viz = [
   "bokeh",
-  "colorcet>=3.2.1,<4",
+  "colorcet>=3.2.1",
   "datashader",
   "holoviews>=1.23",
 ]
@@ -126,7 +126,7 @@ python = "3.12.*"
 # The conda-name half of the dual declaration: [project.dependencies] in conda names, plus the
 # conda-only packages. The environment's own python stays in feature.core.
 [tool.pixi.package.run-dependencies]
-python = ">=3.12,<3.14"       # requires-python
+python = ">=3.12"              # requires-python
 h5py = "*"
 numpy = "*"
 pandas = "*"
@@ -141,7 +141,7 @@ xugrid = "*"
 # so a consumer that draws maps declares the package itself and gets the floor, and one that
 # does not installs nothing from viz.
 [tool.pixi.package.run-constraints]
-colorcet = ">=3.2.1,<4"
+colorcet = ">=3.2.1"
 holoviews = ">=1.23"
 
 # Only the environment's python: the core list is the run-dependencies above.
@@ -150,7 +150,7 @@ python = "3.12.*"
 
 [tool.pixi.feature.viz.dependencies]
 bokeh = "*"
-colorcet = ">=3.2.1,<4"
+colorcet = ">=3.2.1"
 datashader = "*"
 holoviews = ">=1.23"
 
