@@ -11,6 +11,9 @@
   (`requires-pixi`, and `pixi-version` in CI). Upgrading an existing checkout in place can leave
   the default environment without the editable install (`ModuleNotFoundError: ras2xugrid`); run
   `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run `pixi install --locked`.
+- The version ceilings are gone: `requires-python` is `>=3.12` (and the package section's `python`
+  run-dependency with it), and `colorcet` keeps its `>=3.2.1` floor without `<4`. The interpreter
+  pin stays 3.12.
 
 ## 0.1.0 (2026-11-05)
 

@@ -35,7 +35,7 @@ pyproject = test_dependency_parity.pyproject
 
 # Today's viz floors (2026-11-06), written out so a change to them is a visible decision.
 VIZ_FLOORS = {
-    "colorcet": ">=3.2.1,<4",
+    "colorcet": ">=3.2.1",
     "holoviews": ">=1.23",
 }
 
