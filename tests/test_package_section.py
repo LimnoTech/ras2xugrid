@@ -38,7 +38,8 @@ RENAMES: dict[str, str] = {}
 # none, ras2xugrid is the bottom of its chain and never depends on a private LimnoTech package.
 UPSTREAMS: set[str] = set()
 
-# Family packages that reach this package only through an upstream (rule 2): none.
+# Family packages that reach this package only through an upstream: none
+# (the user's rule 2 of 2026-11-08: don't declare a package only because a dependency brings it in).
 TRANSITIVE: set[str] = set()
 
 # Today's viz floors (2026-11-06), written out so a change to them is a visible decision.

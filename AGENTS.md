@@ -71,9 +71,9 @@ the tool configuration; there is no `pixi.toml` or `environment.yml`.
 names, with a floor only where this package's own code needs it. `[tool.pixi.package.build.config]`
 sets `ignore-pypi-mapping = false`, so pixi-build-python maps that list to conda names and writes
 them into the record a consumer's solve takes. `[tool.pixi.package.run-dependencies]` holds only
-what a PyPI name cannot say: here, `sqlite >=3.38`, declared for its own chain (no family package is below it) because
-the GDAL/PROJ stack leaves it unbounded. The environment's own tools (`dev`, `jupyter`, `examples`)
-live in pixi features, in conda names.
+what a PyPI name cannot say: here, `sqlite >=3.38`, declared for its own chain (no family package is
+below it) because the GDAL/PROJ stack leaves it unbounded. The environment's own tools (`dev`,
+`jupyter`, `examples`) live in pixi features, in conda names.
 
 This repository is public, so it keeps its `viz` and `jupyter` extras in
 `[project.optional-dependencies]` for people who `pip install`. A source package's record carries
