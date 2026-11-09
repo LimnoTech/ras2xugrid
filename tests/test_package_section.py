@@ -28,7 +28,7 @@ import ras2xugrid
 
 REPO = Path(__file__).resolve().parents[1]
 
-# PyPI-only requirements (no conda-forge build): none. ras2xugrid has no family package below it.
+# PyPI-only requirements (no conda-forge build): none.
 PYPI_ONLY: set[str] = set()
 
 # Where the conda name is not one of the usual spellings `conda_names` tries.
@@ -140,6 +140,8 @@ def test_no_requirement_asks_for_an_extra(pyproject):
 
 def test_pypi_only_names_are_requirements(pyproject):
     """The allowlist names only real requirements, so it cannot hide a typo."""
+    if not PYPI_ONLY:
+        pytest.skip("no PyPI-only package")
     names = {normalize(requirement_name(r)) for r in pyproject["project"]["dependencies"]}
     assert PYPI_ONLY <= names
 
@@ -173,6 +175,8 @@ def test_requires_python_reaches_the_record(pyproject, lock):
 
 def test_pypi_only_names_are_not_in_the_record(pyproject, lock):
     """If one appears, conda-forge has gained a build: take it off the allowlist."""
+    if not PYPI_ONLY:
+        pytest.skip("no PyPI-only package")
     for record in self_records(pyproject, lock).values():
         names = {normalize(entry.split()[0]) for entry in record.get("depends", [])}
         for pypi in PYPI_ONLY:
@@ -183,6 +187,8 @@ def test_upstreams_are_source_packages_in_the_run_dependencies(pyproject):
     """A family package goes only in run-dependencies (rule 1): the self-consumed package brings it
     into this repo's own environment, so it is not named again under [tool.pixi.dependencies];
     in [project.dependencies] or any pypi-dependencies, pixi would look for it on PyPI."""
+    if not UPSTREAMS:
+        pytest.skip("no family package")
     pixi = pyproject["tool"]["pixi"]
     run_dependencies = package(pyproject)["run-dependencies"]
     pypi_tables = [pixi.get("pypi-dependencies", {})]
@@ -201,6 +207,8 @@ def test_upstreams_are_source_packages_in_the_run_dependencies(pyproject):
 def test_upstreams_reach_the_lock_as_source_packages(pyproject, lock):
     """Each upstream is in every self record's depends and locked from its sibling checkout as a
     source package on every platform (rule 1's self-consumption, the probe's 8c)."""
+    if not UPSTREAMS:
+        pytest.skip("no family package")
     environment = lock["environments"]["default"]["packages"]
     for platform, record in self_records(pyproject, lock).items():
         names = {normalize(entry.split()[0]) for entry in record.get("depends", [])}
@@ -213,8 +221,9 @@ def test_upstreams_reach_the_lock_as_source_packages(pyproject, lock):
 
 
 def test_transitive_family_packages_are_not_declared(pyproject):
-    """water-data-engine reaches this package through lake-design-management, with its floor
-    (rule 2); nothing in src/ imports it."""
+    """A family package that reaches this one only through an upstream is never declared here."""
+    if not TRANSITIVE:
+        pytest.skip("no family package")
     text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
     for name in TRANSITIVE:
         assert not re.search(rf"^\s*{re.escape(name)}\s*=", text, flags=re.MULTILINE), name
@@ -329,6 +338,16 @@ def test_viz_extra_is_in_the_viz_feature(pyproject):
     assert {n: v for n, v in conda.items() if v} == VIZ_FLOORS
 
 
+def test_jupyter_extra_is_in_the_jupyter_feature(pyproject):
+    """The public `jupyter` extra (for pip users) names only packages the `jupyter` feature has."""
+    extra = {
+        normalize(requirement_name(r))
+        for r in pyproject["project"]["optional-dependencies"]["jupyter"]
+    }
+    feature = pyproject["tool"]["pixi"]["feature"]["jupyter"]["dependencies"]
+    assert extra <= {normalize(name) for name in feature}
+
+
 def test_run_constraints_are_the_viz_floors(pyproject):
     """A viz floor that is not a run-constraint never reaches a consumer that draws maps."""
     run_constraints = {
@@ -339,12 +358,12 @@ def test_run_constraints_are_the_viz_floors(pyproject):
 
 def test_run_dependencies_hold_only_the_sqlite_floor(pyproject):
     """The runtime list is [project.dependencies]; the run-dependencies add only what a PyPI name
-    cannot say. ras2xugrid declares sqlite once for the family (it has no family package below)."""
+    cannot say. ras2xugrid declares sqlite for its own chain (no family package is below it)."""
     assert set(package(pyproject)["run-dependencies"]) == {"sqlite"}
 
 
 def test_core_feature_holds_only_python(pyproject):
-    """The core list lives in run-dependencies; test_dependency_parity.py skips feature.core."""
+    """The runtime list is [project.dependencies]; the environment needs only its interpreter."""
     assert set(pyproject["tool"]["pixi"]["feature"]["core"]["dependencies"]) == {"python"}
 
 
@@ -366,7 +385,7 @@ def test_package_version_is_the_latest_release(pyproject):
 
 
 def test_ci_environment_has_no_jupyter_stack():
-    """The self-package brings in only run-dependencies, never the Jupyter stack.
+    """The self-package brings in only its record, never the Jupyter stack.
 
     The ci environment does hold the viz stack (its own feature), so only Jupyter is checked.
     """

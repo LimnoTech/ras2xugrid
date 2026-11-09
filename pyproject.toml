@@ -133,13 +133,14 @@ hatch-vcs = "*"
 python = "3.12.*"
 
 # Only what [project.dependencies] cannot say: no family package and no conda-only Python package
-# here. ras2xugrid is the bottom of its chain, so it declares the sqlite floor once for the family.
+# here. ras2xugrid has no family package below it, so it declares the sqlite floor for its own
+# chain.
 [tool.pixi.package.run-dependencies]
-sqlite = ">=3.38"             # the GDAL/PROJ stack leaves it unbounded; a system library, not a Python import
+sqlite = ">=3.38"             # the GDAL/PROJ stack leaves it unbounded; a system library
 
-# The viz floors: the versioned entries of feature.viz (and the viz extra). Constraints, not dependencies,
-# so a consumer that draws maps declares the package itself and gets the floor, and one that
-# does not installs nothing from viz.
+# The viz floors: the versioned entries of feature.viz (and the viz extra). Constraints, not
+# dependencies, so a consumer that draws maps declares the package itself and gets the floor, and
+# one that does not installs nothing from viz.
 [tool.pixi.package.run-constraints]
 colorcet = ">=3.2.1"
 holoviews = ">=1.23"

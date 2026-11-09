@@ -71,14 +71,15 @@ the tool configuration; there is no `pixi.toml` or `environment.yml`.
 names, with a floor only where this package's own code needs it. `[tool.pixi.package.build.config]`
 sets `ignore-pypi-mapping = false`, so pixi-build-python maps that list to conda names and writes
 them into the record a consumer's solve takes. `[tool.pixi.package.run-dependencies]` holds only
-what a PyPI name cannot say: here, `sqlite >=3.38`, declared once for the family because the
-GDAL/PROJ stack leaves it unbounded. The environment's own tools (`dev`, `jupyter`, `examples`)
+what a PyPI name cannot say: here, `sqlite >=3.38`, declared for its own chain (no family package is below it) because
+the GDAL/PROJ stack leaves it unbounded. The environment's own tools (`dev`, `jupyter`, `examples`)
 live in pixi features, in conda names.
 
 This repository is public, so it keeps its `viz` and `jupyter` extras in
 `[project.optional-dependencies]` for people who `pip install`. A source package's record carries
 no extras, so the `viz` feature lists the same packages in conda names for this environment, and
-`run-constraints` carries the viz floors to consumers.
+`run-constraints` carries the viz floors to consumers. The `viz` extra is checked against its
+feature by a test, and so is the `jupyter` extra.
 
 The mapping fails quietly, so `tests/test_package_section.py` reads the record pixi locked in
 `pixi.lock` and checks each requirement is in it, with its specifier, and that `requires-python`

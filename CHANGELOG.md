@@ -6,8 +6,8 @@
   it to conda names for the package's record (`ignore-pypi-mapping = false`), and the
   run-dependencies keep only `sqlite >=3.38`. The `viz` and `jupyter` extras stay for `pip`
   users, and the `viz` feature lists the same packages in conda names.
-  `tests/test_package_section.py` now checks the record pixi locked, and that `pyarrow` is locked wherever `pandas` is and `sqlite`
-  is at least 3.38 wherever `libgdal` is; `tests/test_dependency_parity.py` is gone. Nothing was
+  `tests/test_package_section.py` now checks the record pixi locked, and that `pyarrow` is locked
+  wherever `pandas` is and `sqlite` is at least 3.38 wherever `libgdal` is; `tests/test_dependency_parity.py` is gone. Nothing was
   pruned: the prune script found every `[project]` entry imported in `src/` except `pyarrow`, which
   stays because `pandas` is declared (`pyarrow  [[project]] NEITHER imported nor named`), and its
   one undeclared name, `geoviews` (`viz.py`), is not imported anywhere in `src/`.
