@@ -176,6 +176,7 @@ pre-commit = "*"
 pyrefly = "*"
 pytest = "*"
 pytest-cov = "*"
+pyyaml = "*"                  # tests/test_package_section.py reads pixi.lock in the lean ci env
 ruff = "*"
 zarr = ">=3"
 
