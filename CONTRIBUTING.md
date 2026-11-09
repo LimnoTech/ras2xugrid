@@ -23,9 +23,10 @@ pixi install --all
 | `pixi run typecheck` | `pyrefly check src/ras2xugrid` |
 | `pixi run -e ci test` | the tests in the environment CI tests in: core, viz and dev, without Jupyter |
 
-Add or extend a test for any function you change. A runtime dependency goes in two places: the
-PyPI name in `pyproject.toml`'s `[project.dependencies]` (or an extra), and the conda name in the
-matching `[tool.pixi.feature.*]`; `tests/test_dependency_parity.py` fails if they differ.
+Add or extend a test for any function you change. A runtime dependency goes in one place: its
+PyPI name in `pyproject.toml`'s `[project.dependencies]`, which pixi maps to a conda name; a package
+for the `viz` extra also goes in the `viz` feature, in its conda name. Re-lock after a change and
+run `tests/test_package_section.py`, which checks the locked record.
 Notebooks are Jupytext pairs: edit the `.ipynb` in the notebook editor with the Jupytext Sync
 extension, or edit the `.py` and run `pixi run -e examples jupytext --sync examples/<name>.py`,
 never both at once. See [README § Paired notebooks](README.md#paired-notebooks-jupytext).

@@ -16,12 +16,10 @@ family's internal workflow guide; everything an outside contributor needs is her
 - **Multi-step work pauses for review**: commit each step on its branch and stop for a
   maintainer's review before the next step starts.
 - **Every review finding is fixed before the hand-back, Minor ones included.**
-- **Every runtime dependency is declared twice, on purpose.** The PyPI name goes in
-  `[project.dependencies]` (or its extra); the conda name goes in the matching
-  `[tool.pixi.feature.*]` (the core list is `[tool.pixi.package.run-dependencies]`, see
-  [Source package](#source-package)). Add one and you must add both, or
-  `tests/test_dependency_parity.py` fails. `pandas` implies `pyarrow`. Core has no plotting
-  library. **Never depend on a private LimnoTech package**, in the manifest, the lock or CI.
+- **One runtime dependency list.** `[project.dependencies]`, in PyPI names, holds what
+  `src/ras2xugrid` imports; pixi-build-python maps it to conda names for the package's record
+  (see [Dependencies](#dependencies)). `pandas` implies `pyarrow`. Core has no plotting library.
+  **Never depend on a private LimnoTech package**, in the manifest, the lock or CI.
 - **Preserve HEC-RAS terminology verbatim.** Variable names, attribute names, `Units` and
   `Location` strings are carried as HEC-RAS writes them. Anything derived gets a new name and
   attributes saying how it was derived. In prose, paraphrase and link to the primary HEC-RAS
@@ -67,6 +65,32 @@ example uses. `pixi.lock` is generated; never edit it by hand. The layout is the
 pattern: `pyproject.toml` is the single source of truth for the build, the environment (pixi) and
 the tool configuration; there is no `pixi.toml` or `environment.yml`.
 
+## Dependencies
+
+`[project.dependencies]` is the one runtime list: what `src/` imports or names as a plugin, in PyPI
+names, with a floor only where this package's own code needs it. `[tool.pixi.package.build.config]`
+sets `ignore-pypi-mapping = false`, so pixi-build-python maps that list to conda names and writes
+them into the record a consumer's solve takes. `[tool.pixi.package.run-dependencies]` holds only
+what a PyPI name cannot say: here, `sqlite >=3.38`, declared for its own chain (no family package is
+below it) because the GDAL/PROJ stack leaves it unbounded. The environment's own tools (`dev`,
+`jupyter`, `examples`) live in pixi features, in conda names.
+
+This repository is public, so it keeps its `viz` and `jupyter` extras in
+`[project.optional-dependencies]` for people who `pip install`. A source package's record carries
+no extras, so the `viz` feature lists the same packages in conda names for this environment, and
+`run-constraints` carries the viz floors to consumers. The `viz` extra is checked against its
+feature by a test, and so is the `jupyter` extra.
+
+The mapping fails quietly, so `tests/test_package_section.py` reads the record pixi locked in
+`pixi.lock` and checks each requirement is in it, with its specifier, and that `requires-python`
+reached it. The rules it enforces: no family package, no environment marker, no direct reference
+and no extra in `[project.dependencies]`; a PyPI-only package (none today) goes on its `PYPI_ONLY`
+allowlist and each consumer declares it; where the mapping picks a narrower conda package, declare
+what the code needs. It also checks the solve: where `pandas` is locked so is `pyarrow`, and
+where `libgdal` is locked, `sqlite` is at least 3.38. After a manifest change, re-lock and run it.
+The design, the rules and the probes behind them:
+[water-data-engine's gate 3b spec](https://github.com/LimnoTech/water-data-engine/blob/main/docs/design/specs/2026-11-08-maintainability-gate-3b-design.md).
+
 ## Source package
 
 ras2xugrid is a [pixi-build](https://pixi.sh/latest/build/getting_started/) source package
@@ -88,8 +112,8 @@ A run-constraint applies to that package wherever it appears in the consumer's s
 only by another dependency included, and installs nothing by itself. A conda source dependency
 carries no extras, so a consumer that draws maps names the viz packages itself.
 
-- `feature.core` holds only the environment's python; `tests/test_package_section.py` keeps the
-  package tables in step with `[project]` and the viz feature.
+- `feature.core` holds only the environment's python; `tests/test_package_section.py` holds the
+  package section to the record it produces and the viz extra to the viz feature.
 - The package's static `version` is the **last release**: bump it beside the `CHANGELOG.md` heading
   in each release-preparation change (a test checks the two agree). `__version__` still comes from
   hatch-vcs; the static version reaches only the conda record, where a consumer may floor it.

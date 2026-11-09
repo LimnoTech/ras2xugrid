@@ -41,20 +41,23 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Hydrology",
 ]
 
-# The PyPI-name half of the dual declaration; tests/test_dependency_parity.py keeps it in
-# step with [tool.pixi.package.run-dependencies]. No plotting library in this list, and no
-# dependency on any other LimnoTech package.
+# The one runtime list, in PyPI names: what src/ras2xugrid imports (the viz module's packages are
+# the `viz` extra below). pixi-build-python maps it to conda names for the package's record.
+# No plotting library in this list, and no dependency on any other LimnoTech package.
 dependencies = [
-  "h5py",
+  "h5py",  # _hdf.py opens the plan files
   "numpy",
   "pandas",
-  "pyarrow",  # pandas implies pyarrow
+  "pyarrow",  # pandas 3 backs its str dtype with pyarrow only when installed
   "pyproj",
   "shapely",
   "xarray",
   "xugrid",
 ]
 
+# The public extras, for `pip install "ras2xugrid[viz]"` users. They never reach the conda record
+# (a source package carries no extras): this repository's own environment takes the same packages
+# from the `viz` and `jupyter` features, in conda names.
 [project.optional-dependencies]
 jupyter = [
   "jupyterlab",
@@ -106,9 +109,10 @@ requires-pixi = ">=0.76,<0.77"
 ras2xugrid = { path = "." }
 
 # ras2xugrid as a pixi-build source package: a consumer that names it under a conda
-# [dependencies] table gets the run-dependencies and run-constraints below in its own solve, so
-# its floors reach the consumer on a plain `pixi lock`. tests/test_package_section.py holds these
-# tables to [project] and to the viz feature.
+# [dependencies] table gets its record in its own solve. With ignore-pypi-mapping = false,
+# pixi-build-python writes the record from [project.dependencies] (PyPI names, mapped to conda
+# names) plus the run-dependencies and run-constraints below, so its floors reach the consumer on
+# a plain `pixi lock`. tests/test_package_section.py checks the record pixi locked.
 [tool.pixi.package]
 name = "ras2xugrid"
 # The last release, bumped beside CHANGELOG.md in each release-preparation PR. It is the conda
@@ -118,33 +122,30 @@ version = "0.1.0"
 [tool.pixi.package.build]
 backend = { name = "pixi-build-python", version = "*" }
 
+# Map [project.dependencies] to conda names for the record. Without it the record carries only
+# python and the run-dependencies below.
+[tool.pixi.package.build.config]
+ignore-pypi-mapping = false
+
 [tool.pixi.package.host-dependencies]
 hatchling = "*"
 hatch-vcs = "*"
 python = "3.12.*"
 
-# The conda-name half of the dual declaration: [project.dependencies] in conda names, plus the
-# conda-only packages. The environment's own python stays in feature.core.
+# Only what [project.dependencies] cannot say: no family package and no conda-only Python package
+# here. ras2xugrid has no family package below it, so it declares the sqlite floor for its own
+# chain.
 [tool.pixi.package.run-dependencies]
-python = ">=3.12"              # requires-python
-h5py = "*"
-numpy = "*"
-pandas = "*"
-pyarrow = "*"                 # pandas implies pyarrow
-pyproj = "*"
-shapely = "*"
-sqlite = ">=3.38"             # the GDAL/PROJ stack leaves it unbounded; the system library floor is not a Python import
-xarray = "*"
-xugrid = "*"
+sqlite = ">=3.38"             # the GDAL/PROJ stack leaves it unbounded; a system library
 
-# The viz floors: exactly the versioned entries of feature.viz. Constraints, not dependencies,
-# so a consumer that draws maps declares the package itself and gets the floor, and one that
-# does not installs nothing from viz.
+# The viz floors: the versioned entries of feature.viz (and the viz extra). Constraints, not
+# dependencies, so a consumer that draws maps declares the package itself and gets the floor, and
+# one that does not installs nothing from viz.
 [tool.pixi.package.run-constraints]
 colorcet = ">=3.2.1"
 holoviews = ">=1.23"
 
-# Only the environment's python: the core list is the run-dependencies above.
+# Only the environment's python: the runtime list is [project.dependencies], through the package.
 [tool.pixi.feature.core.dependencies]
 python = "3.12.*"
 
@@ -176,6 +177,7 @@ pre-commit = "*"
 pyrefly = "*"
 pytest = "*"
 pytest-cov = "*"
+pyyaml = "*"                  # tests/test_package_section.py reads pixi.lock in the lean ci env
 ruff = "*"
 zarr = ">=3"
 
