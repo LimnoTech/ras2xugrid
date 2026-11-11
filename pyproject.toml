@@ -201,16 +201,22 @@ typecheck = "pyrefly check src/ras2xugrid"
 formats = "ipynb,py:percent"
 
 [tool.ruff]
-line-length = 100
-# Notebooks are jupytext scripts: top-level statements and display-only expressions are
-# normal there, so they are not linted.
+line-length = 88
+# Notebooks are jupytext scripts: top-level statements and display-only expressions
+# are normal there, so they are not linted.
 extend-exclude = ["examples"]
 # The pre-commit hook passes filenames explicitly, and ruff ignores exclude settings for
 # explicitly-passed paths unless this is set.
 force-exclude = true
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "UP", "B", "W505"]
+
+[tool.ruff.lint.pycodestyle]
+# Code at 88 (the formatter), any line at most 100 (E501),
+# docstrings and comments at 72 (W505).
+max-line-length = 100
+max-doc-length = 72
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,4 +1,5 @@
-"""The CI notebook job's cache key names the plan's SHA-256; keep it equal to the notebook's."""
+"""The CI notebook job's cache key names the plan's SHA-256; keep it
+equal to the notebook's."""
 
 import re
 from pathlib import Path

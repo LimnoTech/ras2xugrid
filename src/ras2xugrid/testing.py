@@ -1,8 +1,10 @@
-"""A small synthetic HEC-RAS plan file, written with HEC-RAS's own paths and names.
+"""A small synthetic HEC-RAS plan file, written with HEC-RAS's own paths
+and names.
 
-The mesh has four real cells (three quadrilaterals and a pentagon), 14 faces in an order that is
-deliberately not xugrid's derived order, and 11 ghost cells, one outside each boundary face.
-Face 1 lists its cells as ``(2, 1)`` so that a face's flow sign is exercised.
+The mesh has four real cells (three quadrilaterals and a pentagon),
+14 faces in an order that is deliberately not xugrid's derived order,
+and 11 ghost cells, one outside each boundary face. Face 1 lists its
+cells as ``(2, 1)`` so that a face's flow sign is exercised.
 """
 
 from __future__ import annotations
@@ -38,7 +40,8 @@ FACE_POINTS = np.array(
     dtype="int32",
 )  # fmt: skip
 
-# Cells on each side of a face; the boundary faces f3 to f13 have ghost cells 4 to 14.
+# Cells on each side of a face; the boundary faces f3 to f13 have ghost
+# cells 4 to 14.
 FACE_CELLS = np.array(
     [
         (0, 1), (2, 1), (1, 3), (0, 4), (1, 5), (2, 6), (2, 7),
@@ -68,13 +71,18 @@ def _centres() -> np.ndarray:
         x1, y1 = np.roll(x, -1), np.roll(y, -1)
         cross = x * y1 - x1 * y
         area = cross.sum() / 2
-        centres[i] = ((x + x1) * cross).sum() / (6 * area), ((y + y1) * cross).sum() / (6 * area)
+        centres[i] = (
+            ((x + x1) * cross).sum() / (6 * area),
+            ((y + y1) * cross).sum() / (6 * area),
+        )
     for k in range(3, N_FACES):
         centres[k + 1] = FACE_POINT_COORDS[FACE_POINTS[k]].mean(axis=0)
     return centres
 
 
-def _put(group: h5py.Group, name: str, data: np.ndarray, units: bytes, location: bytes | None):
+def _put(
+    group: h5py.Group, name: str, data: np.ndarray, units: bytes, location: bytes | None
+):
     dataset = group.create_dataset(name, data=data)
     dataset.attrs["Units"] = np.bytes_(units)
     if location is not None:
@@ -88,7 +96,8 @@ def _write_results(file: h5py.File, area: str) -> None:
     series.create_dataset(
         "Time Date Stamp",
         data=np.array(
-            [b"01JAN2020 00:00:00", b"01JAN2020 12:00:00", b"02JAN2020 00:00:00"], dtype="S18"
+            [b"01JAN2020 00:00:00", b"01JAN2020 12:00:00", b"02JAN2020 00:00:00"],
+            dtype="S18",
         ),
     )
     group = series.create_group(f"2D Flow Areas/{area}")
@@ -96,12 +105,32 @@ def _write_results(file: h5py.File, area: str) -> None:
     cells = np.arange(N_CELLS)[None, :]
     faces = np.arange(N_FACES)[None, :]
     flow = ((t + 1) * (faces + 1)).astype("float32")
-    _put(group, "Water Surface", (10 + 0.1 * t + cells).astype("float32"), b"ft", b"Cells")
-    precipitation = np.repeat(np.array([0.0, 0.5, 1.0], dtype="float32")[:, None], N_CELLS, axis=1)
+    _put(
+        group,
+        "Water Surface",
+        (10 + 0.1 * t + cells).astype("float32"),
+        b"ft",
+        b"Cells",
+    )
+    precipitation = np.repeat(
+        np.array([0.0, 0.5, 1.0], dtype="float32")[:, None], N_CELLS, axis=1
+    )
     _put(group, "Cell Cumulative Precipitation Depth", precipitation, b"in", b"Cell")
     _put(group, "Face Flow", flow, b"cfs", b"Faces")
-    _put(group, "Face Cumulative Volume", np.cumsum(flow * 43200, axis=0), b"ft^3", b"Faces")
-    _put(group, "Courant Number Max", np.zeros((_N_TIMES, N_CELLS), dtype="float32"), b"-", None)
+    _put(
+        group,
+        "Face Cumulative Volume",
+        np.cumsum(flow * 43200, axis=0),
+        b"ft^3",
+        b"Faces",
+    )
+    _put(
+        group,
+        "Courant Number Max",
+        np.zeros((_N_TIMES, N_CELLS), dtype="float32"),
+        b"-",
+        None,
+    )
     group.create_group("Boundary Conditions")
 
 
@@ -113,7 +142,8 @@ def write_synthetic_plan(
     pipe_nodes: bool = True,
     results: bool = True,
 ) -> Path:
-    """Write the synthetic plan to ``path`` and return it as a ``Path``."""
+    """Write the synthetic plan to ``path`` and return it as a
+    ``Path``."""
     path = Path(path)
     with h5py.File(path, "w") as file:
         file.attrs["File Type"] = np.bytes_(b"HEC-RAS Results")
@@ -132,7 +162,9 @@ def write_synthetic_plan(
         file.create_dataset(f"{GEOMETRY}/Attributes", data=attributes)
         geometry = file.create_group(f"{GEOMETRY}/{area}")
         geometry.create_dataset("FacePoints Coordinate", data=FACE_POINT_COORDS)
-        geometry.create_dataset("Cells FacePoint Indexes", data=_cells_facepoint_indexes())
+        geometry.create_dataset(
+            "Cells FacePoint Indexes", data=_cells_facepoint_indexes()
+        )
         geometry.create_dataset("Faces FacePoint Indexes", data=FACE_POINTS)
         geometry.create_dataset("Faces Cell Indexes", data=FACE_CELLS)
         surface = np.zeros(N_CELLS)
@@ -140,7 +172,9 @@ def write_synthetic_plan(
         geometry.create_dataset("Cells Surface Area", data=surface.astype("float32"))
         elevation = np.full(N_CELLS, np.nan)
         elevation[:CELL_COUNT] = [5, 5, 5, 6]
-        geometry.create_dataset("Cells Minimum Elevation", data=elevation.astype("float32"))
+        geometry.create_dataset(
+            "Cells Minimum Elevation", data=elevation.astype("float32")
+        )
         geometry.create_dataset("Cells Center Coordinate", data=_centres())
 
         if pipe_nodes:
@@ -148,7 +182,9 @@ def write_synthetic_plan(
             nodes["Name"] = [b"Node 1", b"Node 2"]
             nodes["Invert Elevation"] = [4.0, 4.5]
             file.create_dataset("Geometry/Pipe Nodes/Attributes", data=nodes)
-            file.create_dataset("Geometry/Pipe Nodes/Points", data=[[0.5, 0.5], [2.5, 0.5]])
+            file.create_dataset(
+                "Geometry/Pipe Nodes/Points", data=[[0.5, 0.5], [2.5, 0.5]]
+            )
 
         if results:
             _write_results(file, area)

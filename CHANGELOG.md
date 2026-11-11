@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Style: Python code is formatted at 88 columns, docstrings and comments are wrapped at 72
+  (ruff's `W505`), and Markdown at 80 (markdownlint-cli2 in pre-commit); the formatting and
+  rewrapping changed no behavior.
 - One dependency list. `[project.dependencies]` is the only runtime list; pixi-build-python maps it
   to conda names for the package's record (`ignore-pypi-mapping = false`), and the run-dependencies
   keep only `sqlite >=3.38`. The `viz` and `jupyter` extras stay for `pip` users, and the `viz`

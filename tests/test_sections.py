@@ -49,8 +49,9 @@ def test_boundary_of_two_cells_drops_their_shared_face(uds):
 
 
 def _jasons_table():
-    # (face, US_Cell) for every face of c0 and c1; f0 is shared, so it appears twice with
-    # opposite signs, and f1's first cell is c2, so c1 gives it -1
+    # (face, US_Cell) for every face of c0 and c1; f0 is shared, so it
+    # appears twice with opposite signs, and f1's first cell is c2, so
+    # c1 gives it -1
     rows = [(0, 0), (3, 0), (12, 0), (13, 0), (0, 1), (1, 1), (2, 1), (4, 1)]
     return pd.DataFrame(
         {
@@ -109,7 +110,9 @@ def test_a_table_row_whose_us_cell_is_not_on_the_face_raises(uds):
 
 def test_a_variable_not_on_faces_raises(uds):
     with pytest.raises(ValueError, match="Water Surface"):
-        cross_section_series(uds, boundary_faces(uds, {"a": [0]}), variables=("Water Surface",))
+        cross_section_series(
+            uds, boundary_faces(uds, {"a": [0]}), variables=("Water Surface",)
+        )
 
 
 def test_a_ghost_side_counts_as_outside(uds):
@@ -120,8 +123,12 @@ def test_a_ghost_side_counts_as_outside(uds):
 
 
 def _frame(rows):
-    index = pd.MultiIndex.from_tuples([(s, e) for s, e, _ in rows], names=["cross_section", "edge"])
-    return pd.DataFrame({"sign": np.array([r[2] for r in rows], dtype="int8")}, index=index)
+    index = pd.MultiIndex.from_tuples(
+        [(s, e) for s, e, _ in rows], names=["cross_section", "edge"]
+    )
+    return pd.DataFrame(
+        {"sign": np.array([r[2] for r in rows], dtype="int8")}, index=index
+    )
 
 
 def test_a_nan_in_one_section_leaves_the_others_exact(uds):
@@ -129,14 +136,17 @@ def test_a_nan_in_one_section_leaves_the_others_exact(uds):
     faces = boundary_faces(uds, {"a": [0, 1], "b": [3]})  # a holds edge 1, b does not
     series = cross_section_series(uds, faces, variables=("Face Flow",))
     assert np.isnan(series["Face Flow"].sel(cross_section="a").values).all()
-    # b: edges 2 (-1), 8, 9, 10, 11 (+1) -> (t + 1) * (-3 + 9 + 10 + 11 + 12)
+    # b: edges 2 (-1), 8, 9, 10, 11 (+1) ->
+    # (t + 1) * (-3 + 9 + 10 + 11 + 12)
     expected = (np.arange(3) + 1) * (-3 + 9 + 10 + 11 + 12)
     assert (series["Face Flow"].sel(cross_section="b").values == expected).all()
 
 
 def test_multi_section_series_value_by_value(uds):
     faces = _frame([("x", 0, 1), ("x", 5, -1), ("y", 2, 1), ("y", 7, 1), ("y", 9, -1)])
-    series = cross_section_series(uds, faces, variables=("Face Flow", "Face Cumulative Volume"))
+    series = cross_section_series(
+        uds, faces, variables=("Face Flow", "Face Cumulative Volume")
+    )
     t = np.arange(3)
     flow_x = (t + 1) * (1 - 6)
     flow_y = (t + 1) * (3 + 8 - 10)
@@ -160,13 +170,17 @@ def test_a_us_cell_that_is_not_a_real_cell_raises(uds, us_cell):
 
 
 def test_a_missing_value_in_the_table_raises_naming_the_row(uds):
-    table = pd.DataFrame({"CrossSection": ["x", "x"], "Face": [0, np.nan], "US_Cell": [0, 1]})
+    table = pd.DataFrame(
+        {"CrossSection": ["x", "x"], "Face": [0, np.nan], "US_Cell": [0, 1]}
+    )
     with pytest.raises(ValueError, match="row 1"):
         faces_from_table(uds, table)
 
 
 def test_the_same_side_listed_twice_raises(uds):
-    table = pd.DataFrame({"CrossSection": ["x", "x"], "Face": [0, 0], "US_Cell": [0, 0]})
+    table = pd.DataFrame(
+        {"CrossSection": ["x", "x"], "Face": [0, 0], "US_Cell": [0, 0]}
+    )
     with pytest.raises(ValueError, match="'x'.*Face 0"):
         faces_from_table(uds, table)
 
@@ -208,13 +222,16 @@ def test_a_non_integral_face_or_cell_is_refused_naming_the_row(uds):
 
 
 def test_a_subset_dataset_is_refused_by_boundary_faces_and_series(uds):
-    # Faces Cell Indexes is a data variable: a spatial subset keeps the old numbering
+    # Faces Cell Indexes is a data variable: a spatial subset keeps the
+    # old numbering
     sub = uds.ugrid.sel(x=slice(0.9, 3.1))
     with pytest.raises(ValueError, match="no longer matches its grid"):
         boundary_faces(sub, {"a": [0]})
     faces = boundary_faces(uds, {"pair": [0, 1]})
     with pytest.raises(ValueError, match="no longer matches its grid"):
-        faces_from_table(sub, pd.DataFrame({"CrossSection": ["a"], "Face": [0], "US_Cell": [0]}))
+        faces_from_table(
+            sub, pd.DataFrame({"CrossSection": ["a"], "Face": [0], "US_Cell": [0]})
+        )
     with pytest.raises(ValueError, match="no longer matches its grid"):
         cross_section_series(sub, faces)
 
@@ -238,11 +255,13 @@ def _line(*points):
 
 
 def test_the_plans_line_selects_face_0_only(uds):
-    """Face 11 is the pentagon's perimeter face, (3, ghost), which is never selected.
+    """Face 11 is the pentagon's perimeter face, (3, ghost), which is
+    never selected.
 
-    The line (1.05, -0.5) to (1.05, 1.5) crosses faces 0 and 11, but xugrid's snapping skips an
-    edge whose other cell is a ghost, so only face 0 remains (its first cell, c0, is on the
-    left of a line heading north: +1).
+    The line (1.05, -0.5) to (1.05, 1.5) crosses faces 0 and 11, but
+    xugrid's snapping skips an edge whose other cell is a ghost, so only
+    face 0 remains (its first cell, c0, is on the left of a line heading
+    north: +1).
     """
     faces = cross_section_faces(uds, {"u": _line((1.05, -0.5), (1.05, 1.5))})
     assert faces.index.names == ["cross_section", "edge"]
@@ -261,9 +280,13 @@ def test_the_plans_line_selects_face_0_only(uds):
         (((0.6, 1.5), (1.4, 0.5)), {0: -1}),
     ],
 )
-def test_lines_select_the_measured_faces_and_reversing_flips_every_sign(uds, points, expected):
-    # the U line has face 1, listed (2, 1), at +1: the sign follows the face's first cell
-    # the line along x = 1 selects face 0 from both of its cells, which collapse
+def test_lines_select_the_measured_faces_and_reversing_flips_every_sign(
+    uds, points, expected
+):
+    # the U line has face 1, listed (2, 1), at +1: the sign follows the
+    #   face's first cell
+    # the line along x = 1 selects face 0 from both of its cells, which
+    #   collapse
     # the last line passes through face point 5
     faces = cross_section_faces(uds, {"s": _line(*points)})
     assert _signs(faces, "s") == expected
@@ -288,8 +311,9 @@ def test_a_line_inside_one_cell_raises_naming_the_section(uds):
 
 
 def test_a_line_across_a_face_both_ways_raises_naming_the_section_and_edge(uds):
-    # a V inside c0 and c1: the first leg has c1's centroid on its right and the second on its
-    # left, so face 2 (between c1 and c3), selected from c1 by both, gets opposite signs
+    # a V inside c0 and c1: the first leg has c1's centroid on its right
+    # and the second on its left, so face 2 (between c1 and c3),
+    # selected from c1 by both, gets opposite signs
     line = _line((0.5, 0.6), (1.5, 0.6), (0.5, 0.9))
     with pytest.raises(ValueError, match="'zig'.*edge 2"):
         cross_section_faces(uds, {"zig": line})
@@ -299,12 +323,14 @@ def test_a_lines_series_equals_the_tables(uds):
     faces = cross_section_faces(
         uds, {"u": _line((1.05, -0.5), (1.05, 0.9), (1.95, 0.9), (1.95, -0.5))}
     )
-    # US_Cell is the face's cell on the line's left: c0 for f0 (cells 0, 1), c2 for f1 (cells
-    # 2, 1) and c3 for f2 (cells 1, 3)
+    # US_Cell is the face's cell on the line's left: c0 for f0
+    # (cells 0, 1), c2 for f1 (cells 2, 1) and c3 for f2 (cells 1, 3)
     table = pd.DataFrame({"CrossSection": "u", "Face": [0, 1, 2], "US_Cell": [0, 2, 3]})
     from_table = faces_from_table(uds, table)
     pd.testing.assert_frame_equal(faces, from_table)
-    assert cross_section_series(uds, faces).equals(cross_section_series(uds, from_table))
+    assert cross_section_series(uds, faces).equals(
+        cross_section_series(uds, from_table)
+    )
 
 
 def test_several_lines_keep_input_order(uds):
@@ -312,7 +338,10 @@ def test_several_lines_keep_input_order(uds):
         uds,
         {"b": _line((0.3, -0.5), (2.7, 2.0)), "a": _line((1.05, -0.5), (1.05, 1.5))},
     )
-    assert list(dict.fromkeys(faces.index.get_level_values("cross_section"))) == ["b", "a"]
+    assert list(dict.fromkeys(faces.index.get_level_values("cross_section"))) == [
+        "b",
+        "a",
+    ]
     assert _signs(faces, "b") == {0: 1, 2: -1}
     assert _signs(faces, "a") == {0: 1}
 
@@ -337,19 +366,25 @@ def test_a_dataframe_with_a_geometry_column_needs_no_geopandas(uds):
 
 
 def test_max_distance_moves_vertices_onto_face_points(uds):
-    # the end (1.03, 0.97) is 0.042 from face point 5 (1, 1): unmoved, the line crosses face 0;
-    # moved onto the face point it ends there, inside c0, and selects nothing
-    # it starts at c0's centroid, which is on the line, with c1 on its right: c0 is the left cell
+    # the end (1.03, 0.97) is 0.042 from face point 5 (1, 1): unmoved,
+    #   the line crosses face 0;
+    # moved onto the face point it ends there, inside c0, and selects
+    #   nothing
+    # it starts at c0's centroid, which is on the line, with c1 on its
+    #   right: c0 is the left cell
     line = _line((0.5, 0.5), (1.03, 0.97))
     assert _signs(cross_section_faces(uds, {"s": line}), "s") == {0: 1}
-    assert _signs(cross_section_faces(uds, {"s": line}, max_distance=0.0), "s") == {0: 1}
+    assert _signs(cross_section_faces(uds, {"s": line}, max_distance=0.0), "s") == {
+        0: 1
+    }
     with pytest.raises(ValueError, match="'s'.*selects no face"):
         cross_section_faces(uds, {"s": line}, max_distance=0.05)
 
 
 def test_a_line_that_crosses_no_face_once_snapped_raises_naming_the_section(uds):
-    # unmoved it enters the pentagon over perimeter face 11; moved onto face point 5 it stays
-    # outside the mesh and crosses no face, where xugrid itself would crash
+    # unmoved it enters the pentagon over perimeter face 11; moved onto
+    # face point 5 it stays outside the mesh and crosses no face, where
+    # xugrid itself would crash
     line = _line((0.5, 1.5), (1.04, 1.02))
     with pytest.raises(ValueError, match="'s'.*crosses no face once"):
         cross_section_faces(uds, {"s": line}, max_distance=0.05)
@@ -400,13 +435,16 @@ def test_a_subset_dataset_is_refused_by_cross_section_faces(uds):
 
 
 def test_a_lines_faces_are_boundary_faces_of_the_cells_on_its_left(uds):
-    # the line x = 1.05 heading north has c0 on its left; c0's boundary also holds perimeter
-    # faces, which a line never selects, so compare on the line's own faces
+    # the line x = 1.05 heading north has c0 on its left; c0's boundary
+    # also holds perimeter faces, which a line never selects, so compare
+    # on the line's own faces
     line_faces = cross_section_faces(uds, {"L": _line((1.05, -0.5), (1.05, 1.5))})
     boundary = boundary_faces(uds, {"L": [0]}).loc[["L"]]
     pd.testing.assert_frame_equal(boundary.loc[line_faces.index], line_faces)
     # the U line: left cells c0 (f0), c2 (f1) and c3 (f2)
-    u = cross_section_faces(uds, {"L": _line((1.05, -0.5), (1.05, 0.9), (1.95, 0.9), (1.95, -0.5))})
+    u = cross_section_faces(
+        uds, {"L": _line((1.05, -0.5), (1.05, 0.9), (1.95, 0.9), (1.95, -0.5))}
+    )
     boundary = boundary_faces(uds, {"L": [0, 2, 3]}).loc[["L"]]
     pd.testing.assert_frame_equal(boundary.loc[u.index], u)
 
@@ -424,8 +462,9 @@ def test_a_non_numeric_max_distance_raises_type_error(uds, bad):
 
 
 def test_a_centroid_on_the_line_gets_the_sign_of_the_cells_on_either_side(uds):
-    # c0's centroid (0.5, 0.5) is the line's start; xugrid's lengthened segment puts it on a
-    # side, the exact line does not, so the sign compares the face's two cells instead
+    # c0's centroid (0.5, 0.5) is the line's start; xugrid's lengthened
+    # segment puts it on a side, the exact line does not, so the sign
+    # compares the face's two cells instead
     points = ((0.5, 0.5), (1.6, 0.8))
     faces = cross_section_faces(uds, {"s": _line(*points)})
     assert _signs(faces, "s") == {0: 1, 2: -1}
@@ -434,7 +473,8 @@ def test_a_centroid_on_the_line_gets_the_sign_of_the_cells_on_either_side(uds):
 
 
 def _consistent_sides(uds, faces, name):
-    """Whether one left/right labelling of cells fits every sign of the section."""
+    """Whether one left/right labelling of cells fits every sign of the
+    section."""
     face_cells = np.asarray(uds["Faces Cell Indexes"].values)
     left: dict[int, bool] = {}
     for edge, sign in _signs(faces, name).items():
@@ -463,7 +503,11 @@ def test_every_line_between_centroids_has_signs_that_fit_one_left_and_right(uds)
                 try:
                     faces = cross_section_faces(uds, {"s": line})
                 except ValueError as error:
-                    assert re.search(_DOCUMENTED_REFUSALS, str(error)), (start, end, str(error))
+                    assert re.search(_DOCUMENTED_REFUSALS, str(error)), (
+                        start,
+                        end,
+                        str(error),
+                    )
                     continue
                 assert _consistent_sides(uds, faces, "s"), (start, end)
                 checked += 1

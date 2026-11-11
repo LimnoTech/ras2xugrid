@@ -1,8 +1,10 @@
-"""The reader on real HEC-RAS plan files, from the folder in ``HECRAS_TEST_DATA``.
+"""The reader on real HEC-RAS plan files, from the folder in
+``HECRAS_TEST_DATA``.
 
-The real-plan tests are marked ``local_data`` and skipped unless the folder is set. Every plan
-in the folder is tested, and test ids use a plan's position (``plan0``), never its file name.
-Plan files never enter the repository.
+The real-plan tests are marked ``local_data`` and skipped unless the
+folder is set. Every plan in the folder is tested, and test ids use a
+plan's position (``plan0``), never its file name. Plan files never enter
+the repository.
 """
 
 from __future__ import annotations
@@ -21,12 +23,14 @@ from ras2xugrid.testing import write_synthetic_plan
 
 local_data = pytest.mark.local_data
 
-# The one named file, with its cell count (check 1 of docs/hecras-plan-files.md).
+# The one named file, with its cell count (check 1 of
+# docs/hecras-plan-files.md).
 SUMWERE = ("clearWaterTestCases.p48.hdf", 367)
 
 
 def plans(folder: Path) -> list[Path]:
-    """Every ``*.hdf`` in ``folder`` that holds results: a plan, not a geometry file."""
+    """Every ``*.hdf`` in ``folder`` that holds results: a plan, not a
+    geometry file."""
     found = []
     for path in sorted(folder.glob("*.hdf")):
         if not h5py.is_hdf5(path):
@@ -39,7 +43,8 @@ def plans(folder: Path) -> list[Path]:
 
 @cache
 def _plans(folder: Path) -> list[Path]:
-    """``plans(folder)``, computed once per folder for collection and the tests."""
+    """``plans(folder)``, computed once per folder for collection and
+    the tests."""
     return plans(folder)
 
 
@@ -49,7 +54,8 @@ def _folder() -> Path | None:
 
 
 def _plan_areas() -> list[tuple[int, int | None]]:
-    """Each (plan position, area position) pair; a plan with no 2D area gets ``None``."""
+    """Each (plan position, area position) pair; a plan with no 2D area
+    gets ``None``."""
     folder = _folder()
     if folder is None:
         return []
@@ -66,12 +72,16 @@ def _plan_areas() -> list[tuple[int, int | None]]:
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     if "plan_area" in metafunc.fixturenames:
         pairs = _plan_areas()
-        ids = [f"plan{p}-area{a}" if a is not None else f"plan{p}-noarea" for p, a in pairs]
+        ids = [
+            f"plan{p}-area{a}" if a is not None else f"plan{p}-noarea" for p, a in pairs
+        ]
         metafunc.parametrize("plan_area", pairs, ids=ids)
     if "plan_position" in metafunc.fixturenames:
         folder = _folder()
         count = len(_plans(folder)) if folder else 0
-        metafunc.parametrize("plan_position", range(count), ids=[f"plan{i}" for i in range(count)])
+        metafunc.parametrize(
+            "plan_position", range(count), ids=[f"plan{i}" for i in range(count)]
+        )
 
 
 def _area(folder: Path, plan_area: tuple[int, int | None]):
@@ -114,13 +124,16 @@ def test_every_result_array_is_in_the_dataset(hecras_test_data, plan_area):
         group = file[group_path]
         arrays = [k for k, v in group.items() if isinstance(v, h5py.Dataset)]
         for key in arrays:
-            assert key in uds.obj, f"{key} (Location {decode(group[key].attrs.get('Location'))})"
+            assert key in uds.obj, (
+                f"{key} (Location {decode(group[key].attrs.get('Location'))})"
+            )
             assert uds[key].dims[0] == "time"
 
 
 @local_data
 def test_face_flow_runs_from_first_to_second_cell(hecras_test_data, plan_area):
-    """Face Flow is positive from the first to the second cell of Faces Cell Indexes."""
+    """Face Flow is positive from the first to the second cell of Faces
+    Cell Indexes."""
     path, position = _area(hecras_test_data, plan_area)
     areas = list_flow_areas(path)
     uds = open_flow_area(path, area=str(areas.index[position]))
@@ -136,9 +149,9 @@ def test_face_flow_runs_from_first_to_second_cell(hecras_test_data, plan_area):
     agree = np.sign(moving[decided]) == np.sign(head[decided])
     if decided.sum() <= 100:
         pytest.skip(f"{path.name}: only {decided.sum()} faces decided, too few to test")
-    # 0.99 is deliberate slack; plans measured while writing this agreed 100%
-    # (docs/hecras-plan-files.md).
-    # No wet filter: a face between dry cells carries no flow, so `moving != 0` drops it.
+    # 0.99 is deliberate slack; plans measured while writing this agreed
+    # 100% (docs/hecras-plan-files.md). No wet filter: a face between
+    # dry cells carries no flow, so `moving != 0` drops it.
     assert agree.mean() >= 0.99
 
 

@@ -13,7 +13,9 @@ def test_synthetic_plan_uses_hec_ras_paths(synthetic_plan):
     with h5py.File(synthetic_plan) as file:
         area = file[f"{GEOMETRY}/meshArea"]
         assert area["Cells FacePoint Indexes"].shape == (15, 8)
-        np.testing.assert_array_equal(area["Faces Cell Indexes"][()], testing.FACE_CELLS)
+        np.testing.assert_array_equal(
+            area["Faces Cell Indexes"][()], testing.FACE_CELLS
+        )
         assert file[f"{RESULTS}/2D Flow Areas/meshArea/Face Flow"].shape == (3, 14)
 
 

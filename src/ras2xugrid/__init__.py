@@ -4,7 +4,8 @@ from __future__ import annotations
 
 try:
     from ._version import __version__
-except ImportError:  # pragma: no cover - a source tree that was never built or installed
+except ImportError:  # pragma: no cover
+    # - a source tree that was never built or installed
     __version__ = "0.0.0"
 
 from .plan import list_flow_areas, open_flow_area, pipe_nodes
