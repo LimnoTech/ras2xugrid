@@ -1,4 +1,5 @@
-"""``list_flow_areas``, ``open_flow_area`` and ``pipe_nodes`` on the synthetic plan."""
+"""``list_flow_areas``, ``open_flow_area`` and ``pipe_nodes`` on the
+synthetic plan."""
 
 from __future__ import annotations
 
@@ -13,7 +14,8 @@ from ras2xugrid import testing
 from ras2xugrid._hdf import GEOMETRY, RESULTS, parse_time_date_stamp
 from ras2xugrid.plan import list_flow_areas, open_flow_area, pipe_nodes
 
-# The synthetic plan's "Courant Number Max" has no Location on purpose; tests that care say so.
+# The synthetic plan's "Courant Number Max" has no Location on purpose;
+# tests that care say so.
 pytestmark = pytest.mark.filterwarnings("ignore:skipped 'Courant Number Max'")
 
 
@@ -66,7 +68,7 @@ def test_paths_and_open_files_are_accepted(synthetic_plan, kind, function):
     pd.testing.assert_frame_equal(result, expected)
 
 
-# ---- open_flow_area ----------------------------------------------------------------------------
+# ---- open_flow_area --------------------------------------------------
 
 
 @pytest.fixture
@@ -83,18 +85,23 @@ def test_ghost_cells_are_dropped_and_ghost_neighbours_are_minus_one(synthetic_ud
     assert cells.dims == ("mesh2d_nEdges", "two")
     assert (cells.values[3:, 1] == -1).all()
     np.testing.assert_array_equal(cells.values[:3], [[0, 1], [2, 1], [1, 3]])
-    assert cells.attrs["comment"] == "indexes of ghost cells (>= Cell Count) written as -1"
+    assert (
+        cells.attrs["comment"] == "indexes of ghost cells (>= Cell Count) written as -1"
+    )
 
 
 def test_hec_ras_face_order_is_the_edge_order(synthetic_uds):
     grid = synthetic_uds.grids[0]
     np.testing.assert_array_equal(grid.edge_node_connectivity, testing.FACE_POINTS)
-    np.testing.assert_array_equal(synthetic_uds["Face Flow"].values[0], np.arange(1, 15))
+    np.testing.assert_array_equal(
+        synthetic_uds["Face Flow"].values[0], np.arange(1, 15)
+    )
 
 
 def test_grid_edge_face_connectivity_matches_hec_ras(synthetic_uds):
     np.testing.assert_array_equal(
-        synthetic_uds.grids[0].edge_face_connectivity, synthetic_uds["Faces Cell Indexes"].values
+        synthetic_uds.grids[0].edge_face_connectivity,
+        synthetic_uds["Faces Cell Indexes"].values,
     )
 
 
@@ -103,7 +110,9 @@ def test_attributes_are_verbatim_and_units_is_copied(synthetic_uds):
     assert attrs["Units"] == "cfs"
     assert attrs["units"] == "cfs"
     assert attrs["Location"] == "Faces"
-    assert synthetic_uds["Cell Cumulative Precipitation Depth"].attrs["Location"] == "Cell"
+    assert (
+        synthetic_uds["Cell Cumulative Precipitation Depth"].attrs["Location"] == "Cell"
+    )
 
 
 def test_singular_location_is_read_on_cells(synthetic_uds):
@@ -120,7 +129,9 @@ def test_arrays_without_location_warn_and_groups_are_skipped(synthetic_plan, rec
 
 
 def test_time_comes_from_time_date_stamp_and_days_are_kept(synthetic_uds):
-    expected = pd.DatetimeIndex(["2020-01-01 00:00", "2020-01-01 12:00", "2020-01-02 00:00"])
+    expected = pd.DatetimeIndex(
+        ["2020-01-01 00:00", "2020-01-01 12:00", "2020-01-02 00:00"]
+    )
     assert (synthetic_uds["time"].to_index() == expected).all()
     np.testing.assert_array_equal(synthetic_uds["time_days"].values, [0, 0.5, 1])
     assert synthetic_uds["time_days"].attrs == {"Time": "days", "hecras_name": "Time"}
@@ -160,7 +171,9 @@ def test_depth_is_derived_and_labelled_when_hydraulic_depth_is_absent(synthetic_
     )
     with h5py.File(synthetic_plan, "r+") as file:
         group = file[f"{RESULTS}/2D Flow Areas/meshArea"]
-        data = group.create_dataset("Cell Hydraulic Depth", data=np.ones((3, 15), "float32"))
+        data = group.create_dataset(
+            "Cell Hydraulic Depth", data=np.ones((3, 15), "float32")
+        )
         data.attrs["Units"] = np.bytes_(b"ft")
         data.attrs["Location"] = np.bytes_(b"Cells")
     with pytest.warns(UserWarning):
@@ -229,7 +242,9 @@ def test_a_time_slice_selecting_nothing_raises(synthetic_plan):
 def test_area_must_be_named_when_the_file_has_several(synthetic_plan):
     with h5py.File(synthetic_plan, "r+") as file:
         file.copy(f"{GEOMETRY}/meshArea", f"{GEOMETRY}/second")
-        file.copy(f"{RESULTS}/2D Flow Areas/meshArea", f"{RESULTS}/2D Flow Areas/second")
+        file.copy(
+            f"{RESULTS}/2D Flow Areas/meshArea", f"{RESULTS}/2D Flow Areas/second"
+        )
         old = file[f"{GEOMETRY}/Attributes"][()]
         new = np.concatenate([old, old])
         new["Name"][1] = b"second"
@@ -240,7 +255,9 @@ def test_area_must_be_named_when_the_file_has_several(synthetic_plan):
     with pytest.raises(KeyError, match=r"(?s)meshArea.*second"):
         open_flow_area(synthetic_plan, area="nope")
     with pytest.warns(UserWarning):
-        assert open_flow_area(synthetic_plan, area="second").attrs["flow_area"] == "second"
+        assert (
+            open_flow_area(synthetic_plan, area="second").attrs["flow_area"] == "second"
+        )
 
 
 def test_a_plan_without_results_opens_its_mesh(tmp_path):
@@ -253,7 +270,7 @@ def test_a_plan_without_results_opens_its_mesh(tmp_path):
     assert uds.attrs["Plan Title"] == "synthetic"
 
 
-# ---- errors and edge cases ---------------------------------------------------------------------
+# ---- errors and edge cases -------------------------------------------
 
 
 def test_list_flow_areas_has_no_plan_title_without_plan_information(synthetic_plan):
@@ -262,7 +279,9 @@ def test_list_flow_areas_has_no_plan_title_without_plan_information(synthetic_pl
     assert pd.isna(list_flow_areas(synthetic_plan).loc["meshArea", "Plan Title"])
 
 
-def test_a_flow_area_without_faces_facepoint_indexes_names_area_and_path(synthetic_plan):
+def test_a_flow_area_without_faces_facepoint_indexes_names_area_and_path(
+    synthetic_plan,
+):
     with h5py.File(synthetic_plan, "r+") as file:
         del file[f"{GEOMETRY}/meshArea/Faces FacePoint Indexes"]
     with pytest.raises(ValueError, match=r"meshArea.*Faces FacePoint Indexes"):
@@ -317,8 +336,9 @@ def test_an_unknown_month_names_the_stamp():
 
 
 def test_time_and_time_days_survive_zarr_and_netcdf(synthetic_uds, tmp_path):
-    # The zarr round trip fails on the old `Time` only on a case-insensitive filesystem (macOS,
-    # Windows), where `Time` and `time` are one path; the case-fold assertion guards Linux too.
+    # The zarr round trip fails on the old `Time` only on a
+    # case-insensitive filesystem (macOS, Windows), where `Time` and
+    # `time` are one path; the case-fold assertion guards Linux too.
     source = synthetic_uds.ugrid.to_dataset()
     names = [*source.variables]
     assert len({name.lower() for name in names}) == len(names)

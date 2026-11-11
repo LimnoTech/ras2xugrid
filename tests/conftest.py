@@ -1,4 +1,5 @@
-"""Shared fixtures: the synthetic plan, and the folder of real plan files when one is set."""
+"""Shared fixtures: the synthetic plan, and the folder of real plan
+files when one is set."""
 
 from __future__ import annotations
 

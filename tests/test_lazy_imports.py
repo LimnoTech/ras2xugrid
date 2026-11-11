@@ -1,4 +1,5 @@
-"""Importing ras2xugrid never loads a plotting library; `mesh_map` names the extra when absent."""
+"""Importing ras2xugrid never loads a plotting library; `mesh_map` names
+the extra when absent."""
 
 from __future__ import annotations
 
@@ -13,7 +14,9 @@ PLOTTING = ("holoviews", "bokeh", "datashader", "colorcet")
 @pytest.mark.parametrize("module", ["ras2xugrid", "ras2xugrid.viz"])
 def test_importing_loads_no_plotting_library(module):
     code = f"import sys, {module}; print([m for m in {PLOTTING!r} if m in sys.modules])"
-    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    out = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
     assert out.stdout.strip() == "[]"
 
 
