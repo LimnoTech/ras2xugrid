@@ -40,6 +40,12 @@ family's internal workflow guide; everything an outside contributor needs is her
   file overwrites the other's changes ([README § Paired
   notebooks](README.md#paired-notebooks-jupytext)).
 
+## Style
+
+Python code at 88 columns; docstrings and comments at 72 (W505). A token longer
+than that, such as a URL, gets `# noqa: W505` on its line. Markdown at 80
+(`.markdownlint.json`, held by the markdownlint-cli2 pre-commit hook).
+
 ## Verification
 
 `pixi run test`, `pixi run lint`, `pixi run format`, `pixi run typecheck`, and
