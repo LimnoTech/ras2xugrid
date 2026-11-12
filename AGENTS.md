@@ -7,6 +7,11 @@ For *what the package is* see [README.md](README.md) and the
 LimnoTech family's internal workflow guide; everything an outside contributor
 needs is here.
 
+## Uses
+
+This file is the whole guide for agents here; LimnoTech staff also follow the
+team's internal guide, which is private and not linked.
+
 ## Choices
 
 - Commit policy: `agent-commits-on-branch`. Agents commit on a branch, never
@@ -20,12 +25,11 @@ needs is here.
   for a maintainer's review before the next step starts.
 - Every review finding is fixed before the hand-back, Minor ones included.
 
-This repository is public, so it states its rules here and links nothing
-private; LimnoTech's shared agent guides stay out of its links and its
-`.claude/settings.json`.
+## Rules for a public repo
 
-## Critical guardrails
-
+- **Nothing private is linked.** This repository is public, so it states its
+  rules here; LimnoTech's shared agent guides stay out of its links and its
+  `.claude/settings.json`.
 - **One runtime dependency list.** `[project.dependencies]`, in PyPI names,
   holds what `src/ras2xugrid` imports; pixi-build-python maps it to conda names
   for the package's record (see [Dependencies](#dependencies)). `pandas` implies
@@ -117,9 +121,7 @@ family package, no environment marker, no direct reference and no extra in
 `PYPI_ONLY` allowlist and each consumer declares it; where the mapping picks a
 narrower conda package, declare what the code needs. It also checks the solve:
 where `pandas` is locked so is `pyarrow`, and where `libgdal` is locked,
-`sqlite` is at least 3.38. After a manifest change, re-lock and run it. The
-design, the rules and the probes behind them:
-[water-data-engine's gate 3b spec](https://github.com/LimnoTech/water-data-engine/blob/main/docs/design/specs/2026-11-08-maintainability-gate-3b-design.md).
+`sqlite` is at least 3.38. After a manifest change, re-lock and run it.
 
 ## Source package
 
@@ -158,13 +160,14 @@ packages itself.
   version (`pixi-version: v0.84.2`). `.github/workflows/pixi-canary.yaml` runs
   the `ci` tests weekly with the latest pixi (`pixi-version: latest`, no cache);
   it blocks nothing, and a red run is a signal to look before moving the floor.
-  GitHub disables a public repository's schedule after 60 days without
-  activity, so check the canary's last run date. Move the floor, the pins and
+  GitHub disables a public repository's scheduled workflows after 60 days
+  without activity, so check the canary's last run date. Move the floor, the pins and
   the README's version together.
-- Upgrading an existing checkout in place can leave the default environment
-  without the editable install (`ModuleNotFoundError: ras2xugrid`); run
-  `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run
-  `pixi install --locked`.
+- Upgrading an existing checkout in place, or a new commit, can leave the
+  default environment without the editable install (`ModuleNotFoundError:
+  ras2xugrid`): pixi 0.84.2 reinstalls the package and loses its editable
+  `.pth` file. Run `pixi reinstall -e default` (the whole environment), or
+  delete `.pixi/envs/default` and run `pixi install --locked`.
 
 ## Gotchas
 

@@ -1,7 +1,7 @@
 # Contributing
 
 Thanks for helping. Issues and pull requests are welcome. Please read
-[AGENTS.md](AGENTS.md) first: its guardrails (HEC-RAS names kept verbatim,
+[AGENTS.md](AGENTS.md) first: its rules (HEC-RAS names kept verbatim,
 anti-goals, how dependencies are declared) apply to every contributor, not only
 agents.
 

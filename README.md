@@ -91,12 +91,13 @@ In a pixi project, as a PyPI dependency:
 pixi add --pypi "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v0.1.0"
 ```
 
-Without `[viz]`, the package has no plotting library. To work on the package
-itself, clone it and:
+Without `[viz]`, the package has no plotting library.
 
 The family is tested with pixi 0.84.2 (`requires-pixi` in `pyproject.toml` sets
 the floor; any newer pixi runs). If yours is older, or a newer one fails, run
 `pixi self-update --version 0.84.2`.
+
+To work on the package itself, clone it and:
 
 ```bash
 pixi install --all
@@ -104,7 +105,10 @@ pixi run test
 ```
 
 Tasks: `test`, `test-local`, `lint`, `format`, `typecheck` (see
-`[tool.pixi.tasks]` in `pyproject.toml`).
+`[tool.pixi.tasks]` in `pyproject.toml`). After a `pixi update`, or when the
+package gets a new commit, `import ras2xugrid` can fail with
+`ModuleNotFoundError` (pixi 0.84.2 can lose the editable install on a
+reinstall): run `pixi reinstall -e <env>` (the whole environment).
 
 ## Example notebook
 

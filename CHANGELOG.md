@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **pixi 0.84.2 or later is required** (`requires-pixi = ">=0.84.2"`, a floor;
+  CI pins v0.84.2 and a weekly canary runs the latest pixi).
 - Style: Python code is formatted at 88 columns, docstrings and comments are wrapped at 72
   (ruff's `W505`), and Markdown at 80 (markdownlint-cli2 in pre-commit); the formatting and
   rewrapping changed no behavior.
