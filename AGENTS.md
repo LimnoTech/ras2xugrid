@@ -161,8 +161,8 @@ packages itself.
   the `ci` tests weekly with the latest pixi (`pixi-version: latest`, no cache);
   it blocks nothing, and a red run is a signal to look before moving the floor.
   GitHub disables a public repository's scheduled workflows after 60 days
-  without activity, so check the canary's last run date. Move the floor, the pins and
-  the README's version together.
+  without activity, so check the canary's last run date. Move the floor, the
+  pins and the README's version together.
 - Upgrading an existing checkout in place, or a new commit, can leave the
   default environment without the editable install (`ModuleNotFoundError:
   ras2xugrid`): pixi 0.84.2 reinstalls the package and loses its editable
