@@ -585,8 +585,8 @@ def test_an_unsupported_requires_pixi_is_reported():
 
 
 def test_ci_pins_the_pixi_version(pyproject):
-    """pixi-build is a preview, so CI runs the pixi the lock was last made
-    or checked with."""
+    """pixi-build is a preview, so CI runs the pixi the lock was last
+    made or checked with."""
     workflow = yaml.safe_load(
         (REPO / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
     )
