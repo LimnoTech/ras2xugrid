@@ -1,0 +1,46 @@
+name: pixi canary
+
+# Runs the lean `ci` tests with the latest pixi, to see a pixi release that
+# breaks pixi-build before the family moves to it. ci.yaml pins the exact pixi
+# the locks were last made or checked with; this file floats. It blocks
+# nothing: a red run is a signal to probe from its log before moving the
+# floor (tests/test_package_section.py keeps ci.yaml's pins and this file's
+# settings in step). GitHub disables a public repository's schedule after 60
+# days without activity, so check the last run date at each round end.
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: canary (latest pixi)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # hatch-vcs derives the version from git history, so a shallow clone
+          # would yield a bogus version and break the import test.
+          fetch-depth: 0
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0
+        with:
+          pixi-version: latest
+          manifest-path: pyproject.toml
+          environments: ci
+          locked: true
+          cache: false
+
+      - name: Pixi version
+        run: pixi --version
+
+      - name: Tests
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: pixi run -e ci test

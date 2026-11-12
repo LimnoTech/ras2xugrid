@@ -501,20 +501,21 @@ def satisfies(version: str, specifier: str) -> bool:
 
 
 def test_satisfies_reads_requires_pixi_ranges():
-    assert satisfies("v0.76.0", ">=0.76,<0.77")
-    assert not satisfies("v0.77.0", ">=0.76,<0.77")
-    assert not satisfies("0.75.2", ">=0.76")
+    assert satisfies("v0.84.2", ">=0.84.2")
+    assert not satisfies("0.84.1", ">=0.84.2")
+    assert satisfies("v0.84.2", ">=0.84.2,<0.85")
+    assert not satisfies("v0.85.0", ">=0.84.2,<0.85")
 
 
 def test_satisfies_names_a_version_it_cannot_read():
     with pytest.raises(ValueError, match="'latest'"):
-        satisfies("latest", ">=0.76")
+        satisfies("latest", ">=0.84.2")
 
 
-@pytest.mark.parametrize("specifier", ["~=0.76", "!=0.77", ">=0.76,!=0.76.1"])
+@pytest.mark.parametrize("specifier", ["~=0.84", "!=0.85", ">=0.84.2,!=0.84.3"])
 def test_satisfies_refuses_an_unsupported_specifier(specifier):
     with pytest.raises(ValueError, match="unsupported specifier"):
-        satisfies("0.76.0", specifier)
+        satisfies("0.84.2", specifier)
 
 
 def setup_pixi_steps(workflow: dict) -> list[dict]:
@@ -566,26 +567,26 @@ def workflow_with(step_with: object) -> dict:
 
 
 def test_an_empty_with_is_reported_not_raised():
-    assert pixi_pin_problems(workflow_with(None), ">=0.76,<0.77") == [
+    assert pixi_pin_problems(workflow_with(None), ">=0.84.2") == [
         "'Setup pixi' sets no pixi-version"
     ]
 
 
 def test_a_non_numeric_pixi_version_is_reported_with_its_step():
     (problem,) = pixi_pin_problems(
-        workflow_with({"pixi-version": "latest"}), ">=0.76,<0.77"
+        workflow_with({"pixi-version": "latest"}), ">=0.84.2"
     )
     assert problem.startswith("'Setup pixi': pixi-version 'latest'")
 
 
 def test_an_unsupported_requires_pixi_is_reported():
-    (problem,) = pixi_pin_problems(workflow_with({"pixi-version": "v0.76.0"}), "~=0.76")
+    (problem,) = pixi_pin_problems(workflow_with({"pixi-version": "v0.84.2"}), "~=0.84")
     assert "unsupported specifier" in problem
 
 
 def test_ci_pins_the_pixi_version(pyproject):
-    """pixi-build is a preview, so CI runs the pixi the lock was made
-    with."""
+    """pixi-build is a preview, so CI runs the pixi the lock was last made
+    or checked with."""
     workflow = yaml.safe_load(
         (REPO / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
     )
@@ -593,3 +594,30 @@ def test_ci_pins_the_pixi_version(pyproject):
     required = pyproject["tool"]["pixi"]["workspace"].get("requires-pixi")
     problems = pixi_pin_problems(workflow, required)
     assert not problems, "; ".join(problems)
+
+
+def test_requires_pixi_is_a_floor_only(pyproject):
+    required = pyproject["tool"]["pixi"]["workspace"]["requires-pixi"]
+    assert re.fullmatch(r">=\d+\.\d+\.\d+", required), required
+
+
+def test_ci_pins_the_floor_version(pyproject):
+    floor = pyproject["tool"]["pixi"]["workspace"]["requires-pixi"][2:]
+    workflow = yaml.safe_load(
+        (REPO / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
+    )
+    pins = {s["with"]["pixi-version"] for s in setup_pixi_steps(workflow)}
+    assert pins == {f"v{floor}"}
+
+
+def test_the_canary_runs_the_latest_pixi():
+    canary = yaml.safe_load(
+        (REPO / ".github/workflows/pixi-canary.yaml").read_text(encoding="utf-8")
+    )
+    # PyYAML reads the bare key `on` as True.
+    triggers = canary.get("on", canary.get(True))
+    assert set(triggers) == {"schedule", "workflow_dispatch"}
+    (step,) = setup_pixi_steps(canary)
+    assert step["with"]["pixi-version"] == "latest"
+    assert step["with"]["cache"] is False
+    assert step["with"]["locked"] is True

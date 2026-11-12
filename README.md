@@ -94,6 +94,10 @@ pixi add --pypi "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v
 Without `[viz]`, the package has no plotting library. To work on the package
 itself, clone it and:
 
+The family is tested with pixi 0.84.2 (`requires-pixi` in `pyproject.toml` sets
+the floor; any newer pixi runs). If yours is older, or a newer one fails, run
+`pixi self-update --version 0.84.2`.
+
 ```bash
 pixi install --all
 pixi run test

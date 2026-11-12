@@ -152,9 +152,15 @@ packages itself.
   `CHANGELOG.md` heading in each release-preparation change (a test checks the
   two agree). `__version__` still comes from hatch-vcs; the static version
   reaches only the conda record, where a consumer may floor it.
-- pixi is pinned to `>=0.76,<0.77` (`requires-pixi`), and each `setup-pixi` step
-  in CI sets `pixi-version: v0.76.0`, because pixi-build is a preview. Move both
-  together.
+- `requires-pixi` is a floor only, `">=0.84.2"`: the pixi the locks were last
+  made or checked with, because pixi-build is a preview and an older pixi can
+  rewrite lock hashes. Each `setup-pixi` step in `ci.yaml` pins that exact
+  version (`pixi-version: v0.84.2`). `.github/workflows/pixi-canary.yaml` runs
+  the `ci` tests weekly with the latest pixi (`pixi-version: latest`, no cache);
+  it blocks nothing, and a red run is a signal to look before moving the floor.
+  GitHub disables a public repository's schedule after 60 days without
+  activity, so check the canary's last run date. Move the floor, the pins and
+  the README's version together.
 - Upgrading an existing checkout in place can leave the default environment
   without the editable install (`ModuleNotFoundError: ras2xugrid`); run
   `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run
