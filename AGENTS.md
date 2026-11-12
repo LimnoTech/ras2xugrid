@@ -7,18 +7,25 @@ For *what the package is* see [README.md](README.md) and the
 LimnoTech family's internal workflow guide; everything an outside contributor
 needs is here.
 
-## Critical guardrails
+## Choices
 
-- **Agents commit on a branch. Agents never push, never merge, and never work on
-  `main`.** Commit messages carry **no AI co-author trailer**. Create a branch
-  (or a worktree) first. These written rules are the only enforcement: no hook
-  stops you.
-- **A new branch never tracks `main`.** Branch from local `main`, or add
+- Commit policy: `agent-commits-on-branch`. Agents commit on a branch, never
+  push, never merge and never work on `main`; create a branch (or a worktree)
+  first. These written rules are the only enforcement: no hook stops you.
+- AI co-author trailer on commits: no.
+- A new branch never tracks `main`. Branch from local `main`, or add
   `--no-track` when branching from a remote ref, and check `git branch -vv`
   before handing back: no upstream, or the branch's own name.
-- **Multi-step work pauses for review**: commit each step on its branch and stop
+- Multi-step work pauses for review: commit each step on its branch and stop
   for a maintainer's review before the next step starts.
-- **Every review finding is fixed before the hand-back, Minor ones included.**
+- Every review finding is fixed before the hand-back, Minor ones included.
+
+This repository is public, so it states its rules here and links nothing
+private; LimnoTech's shared agent guides stay out of its links and its
+`.claude/settings.json`.
+
+## Critical guardrails
+
 - **One runtime dependency list.** `[project.dependencies]`, in PyPI names,
   holds what `src/ras2xugrid` imports; pixi-build-python maps it to conda names
   for the package's record (see [Dependencies](#dependencies)). `pandas` implies
