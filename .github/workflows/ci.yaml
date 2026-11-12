@@ -108,9 +108,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0
         with:
-          # The pixi the lock was made with, inside pyproject.toml's requires-pixi
-          # (tests/test_package_section.py checks it).
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with; requires-pixi is its
+          # floor (tests/test_package_section.py checks it).
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           # The lean environment: core + viz + dev, no Jupyter stack. Solving the
           # geospatial stack on every runner a PR into `main` or a manual run
@@ -163,9 +163,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0
         with:
-          # The pixi the lock was made with, inside pyproject.toml's requires-pixi
-          # (tests/test_package_section.py checks it).
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with; requires-pixi is its
+          # floor (tests/test_package_section.py checks it).
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           environments: default
           locked: true
@@ -201,9 +201,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0
         with:
-          # The pixi the lock was made with, inside pyproject.toml's requires-pixi
-          # (tests/test_package_section.py checks it).
-          pixi-version: v0.76.0
+          # The pixi the lock was last made or checked with; requires-pixi is its
+          # floor (tests/test_package_section.py checks it).
+          pixi-version: v0.84.2
           manifest-path: pyproject.toml
           environments: examples
           locked: true

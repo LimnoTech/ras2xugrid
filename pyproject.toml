@@ -97,11 +97,11 @@ packages = ["src/ras2xugrid"]
 [tool.pixi.workspace]
 channels = ["conda-forge", "nodefaults"]
 platforms = ["linux-64", "osx-arm64", "win-64"]
-# pixi-build is a preview, so pixi is pinned to the version the package section was probed on;
-# CI's setup-pixi steps pin the same version (tests/test_package_section.py). Moving pixi is a
-# deliberate change.
+# pixi-build is a preview. requires-pixi is a floor, the pixi the locks were last made or
+# checked with; CI's setup-pixi steps pin that exact version, and a weekly canary runs the
+# latest (tests/test_package_section.py). Moving the floor is a deliberate change.
 preview = ["pixi-build"]
-requires-pixi = ">=0.76,<0.77"
+requires-pixi = ">=0.84.2"
 
 # Self-install as a pixi-build source package, in the implicit default feature so every
 # environment gets it: this repository consumes itself as its consumers do.
