@@ -128,6 +128,13 @@ jobs:
           # Written on `main` only (see the header comment).
           cache-write: ${{ github.ref_name == 'main' }}
 
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e ci ras2xugrid
+
       # Steps are kept separate so a failure names the tool that failed.
       - name: Tests
         # PYTHONFAULTHANDLER prints a native crash and the Python stack it happened in, even
@@ -173,6 +180,13 @@ jobs:
           # Written on `main` only (see the header comment).
           cache-write: ${{ github.ref_name == 'main' }}
 
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e default ras2xugrid
+
       - name: Type check
         run: pixi run typecheck
 
@@ -210,6 +224,13 @@ jobs:
           cache: true
           # Written on `main` only (see the header comment).
           cache-write: ${{ github.ref_name == 'main' }}
+
+      - name: Rebuild the source packages
+        # On a cache hit, pixi 0.84.2 restores the environment without
+        # building the source packages, so the git-ignored _version.py
+        # their hatch-vcs build hook writes is missing from a fresh
+        # checkout (test_ci_rebuilds_the_source_packages).
+        run: pixi reinstall -e examples ras2xugrid
 
       # HECRAS_TEST_DATA is unset, so the notebook downloads the pinned file (or reads the
       # cache). The executed copy goes to the runner's temp folder, not the checkout.
