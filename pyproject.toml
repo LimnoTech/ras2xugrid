@@ -117,7 +117,7 @@ ras2xugrid = { path = "." }
 name = "ras2xugrid"
 # The last release, bumped beside CHANGELOG.md in each release-preparation PR. It is the conda
 # record's version, which a consumer can floor; __version__ still comes from hatch-vcs.
-version = "0.1.0"
+version = "0.2.0"
 
 [tool.pixi.package.build]
 backend = { name = "pixi-build-python", version = "*" }

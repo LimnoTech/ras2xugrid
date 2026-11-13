@@ -2,11 +2,24 @@
 
 ## Unreleased
 
+## 0.2.0 (2026-11-13)
+
+No change to the API. ras2xugrid is now a pixi-build source package with one
+dependency list, and needs pixi 0.84.2 or later. A pixi project can take it as
+`ras2xugrid = { path = "../ras2xugrid" }` (with `preview = ["pixi-build"]`) and
+inherit its floors; `pip` and `pixi add --pypi` installs from git work as before,
+at the `v0.2.0` tag. After pulling, run `pixi reinstall -e <env>` if
+`import ras2xugrid` fails.
+
 - **pixi 0.84.2 or later is required** (`requires-pixi = ">=0.84.2"`, a floor;
-  CI pins v0.84.2 and a weekly canary runs the latest pixi).
+  CI pins v0.84.2 and a weekly canary runs the latest pixi)
+  ([#6](https://github.com/LimnoTech/ras2xugrid/pull/6)).
+- The dependencies are updated to their newest releases within the package's pins
+  (`pixi update`).
 - Style: Python code is formatted at 88 columns, docstrings and comments are wrapped at 72
   (ruff's `W505`), and Markdown at 80 (markdownlint-cli2 in pre-commit); the formatting and
-  rewrapping changed no behavior.
+  rewrapping changed no behavior
+  ([#5](https://github.com/LimnoTech/ras2xugrid/pull/5)).
 - One dependency list. `[project.dependencies]` is the only runtime list; pixi-build-python maps it
   to conda names for the package's record (`ignore-pypi-mapping = false`), and the run-dependencies
   keep only `sqlite >=3.38`. The `viz` and `jupyter` extras stay for `pip` users, and the `viz`
@@ -15,7 +28,8 @@
   3.38 wherever `libgdal` is; `tests/test_dependency_parity.py` is gone. Nothing was pruned: the
   prune script found every `[project]` entry imported in `src/` except `pyarrow`, which stays
   because `pandas` is declared (`pyarrow  [[project]] NEITHER imported nor named`), and its one
-  undeclared name, `geoviews` (`viz.py`), is not imported anywhere in `src/`.
+  undeclared name, `geoviews` (`viz.py`), is not imported anywhere in `src/`
+  ([#4](https://github.com/LimnoTech/ras2xugrid/pull/4)).
 - ras2xugrid is a pixi-build source package (`[tool.pixi.package]`), and this repository installs
   itself from it. A consumer that is a pixi workspace can declare
   `ras2xugrid = { path = "../ras2xugrid" }` under `[tool.pixi.dependencies]` (a `[dependencies]`
@@ -23,10 +37,11 @@
   its run-dependencies and the viz floors. The package's static version is the last release,
   bumped at each release; `__version__` still comes from hatch-vcs. Upgrading an existing checkout in place can leave
   the default environment without the editable install (`ModuleNotFoundError: ras2xugrid`); run
-  `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run `pixi install --locked`.
+  `pixi reinstall ras2xugrid`, or delete `.pixi/envs/default` and run `pixi install --locked`
+  ([#2](https://github.com/LimnoTech/ras2xugrid/pull/2)).
 - The version ceilings are gone: `requires-python` is `>=3.12` (and the package section's `python`
   run-dependency with it), and `colorcet` keeps its `>=3.2.1` floor without `<4`. The interpreter
-  pin stays 3.12.
+  pin stays 3.12 ([#3](https://github.com/LimnoTech/ras2xugrid/pull/3)).
 
 ## 0.1.0 (2026-11-05)
 
