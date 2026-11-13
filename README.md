@@ -38,7 +38,7 @@ derived gets a new name and attributes saying how. It reads the file with
 
 Design note: [docs/design.md](docs/design.md); what the package reads from a
 plan file: [docs/hecras-plan-files.md](docs/hecras-plan-files.md). Status:
-version `0.1.0`, alpha. The API may still change.
+version `0.2.0`, alpha. The API may still change.
 
 ## Example
 
@@ -82,13 +82,13 @@ Not yet on PyPI or conda-forge (both are planned). Install from GitHub, with the
 `viz` extra if you want `ras2xugrid.viz.mesh_map`:
 
 ```bash
-pip install "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v0.1.0"
+pip install "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v0.2.0"
 ```
 
 In a pixi project, as a PyPI dependency:
 
 ```bash
-pixi add --pypi "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v0.1.0"
+pixi add --pypi "ras2xugrid[viz] @ git+https://github.com/LimnoTech/ras2xugrid@v0.2.0"
 ```
 
 Without `[viz]`, the package has no plotting library.
