@@ -610,6 +610,37 @@ def test_ci_pins_the_floor_version(pyproject):
     assert pins == {f"v{floor}"}
 
 
+def _lock_source_packages(env: str) -> set[str]:
+    """The source packages pixi.lock records in one environment."""
+    text = (REPO / "pixi.lock").read_text(encoding="utf-8")
+    section = text.split("\npackages:\n")[0].split(f"\n  {env}:\n")[1]
+    section = re.split(r"\n  [A-Za-z0-9_-]+:\n", section)[0]
+    return set(re.findall(r"conda_source: ([A-Za-z0-9_.-]+)\[", section))
+
+
+def test_ci_rebuilds_the_source_packages():
+    """Every setup-pixi step in ci.yaml is followed by a step that
+    reinstalls the source packages of its environment: on a cache hit,
+    pixi 0.84.2 restores the environment without building them, so a
+    fresh checkout lacks the git-ignored _version.py their build hook
+    writes."""
+    workflow = yaml.safe_load(
+        (REPO / ".github/workflows/ci.yaml").read_text(encoding="utf-8")
+    )
+    checked = 0
+    for job in workflow["jobs"].values():
+        steps = job.get("steps", [])
+        for step, after in zip(steps, steps[1:], strict=False):
+            if "setup-pixi" not in step.get("uses", ""):
+                continue
+            env = step["with"]["environments"]
+            run = after.get("run", "").split()
+            assert run[:4] == ["pixi", "reinstall", "-e", env], run
+            assert set(run[4:]) == _lock_source_packages(env), run
+            checked += 1
+    assert checked == len(setup_pixi_steps(workflow))
+
+
 def test_the_canary_runs_the_latest_pixi():
     canary = yaml.safe_load(
         (REPO / ".github/workflows/pixi-canary.yaml").read_text(encoding="utf-8")
